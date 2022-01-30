@@ -27,30 +27,25 @@ export interface ModifierSettings {
     mr: number
 }
 
-export interface AnsiState extends ModifierSettings {
+export interface State extends ModifierSettings {
 
     fg?: string;
     bg?: string;
 }
 
-const ANSI_NO_STATE:       AnsiState = { ms: 0, mm: 0, mr: 0 }
-const ANSI_NO_STATE_FINAL: AnsiState = { ms: modifier.FINAL, mm: modifier.FINAL, mr: 0 }
+const ANSI_NO_STATE:       State = { ms: 0, mm: 0, mr: 0 }
+const ANSI_NO_STATE_FINAL: State = { ms: modifier.FINAL, mm: modifier.FINAL, mr: 0 }
 
-export interface AnsiSettings {
+export interface Settings extends ModifierSettings {
 
     fg?: string;
     bg?: string;
-
-    ms:  number;
-    mm:  number;
-    mr:  number;
-
 }
 
-const ANSI_NO_SETTINGS: AnsiSettings = { ms: 0, mm: 0, mr: 0 }
-const ANSI_RESET_SETTINGS: AnsiSettings = { fg: '39', bg: '39', ms: 0, mm: 0, mr: modifier.STANDARD }
+const ANSI_NO_SETTINGS: Settings = { ms: 0, mm: 0, mr: 0 }
+const ANSI_RESET_SETTINGS: Settings = { fg: '39', bg: '39', ms: 0, mm: 0, mr: modifier.STANDARD }
 
-export type AnsiStringParts = (AnsiState | string)[];
+export type AnsiStringParts = (State | string)[];
 
 /*
 const ANSI_SEQ_MODIFIER = '(?:0|1|2|3|4|5|6|7|8|9|21|22|23|24|201|204)';
@@ -68,7 +63,7 @@ const ANSI_SEQ_REGEX = '\x1B\\[([?0-9]+(?:;[0-9]+)*)?m'
 
 export const ansiSeqRegExp = new RegExp(ANSI_SEQ_REGEX.replace(/\s+/g,''),'i')
 
-export function ansiSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false): AnsiSettings {
+export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false): Settings {
 
     let ms: number = 0;
     let mm: number = 0;
@@ -306,18 +301,18 @@ export function ansiSeqMatch2Settings(match: RegExpExecArray, ff: boolean = fals
     return { fg, bg, ms, mm, mr };
 }    
 
-export function ansiSeq2Settings(seq: string, ff: boolean = false): AnsiSettings {
+export function escSeq2Settings(seq: string, ff: boolean = false): Settings {
 
     const m = ansiSeqRegExp.exec(seq);
 
-    if (m) return ansiSeqMatch2Settings(m,ff);
+    if (m) return escSeqMatch2Settings(m,ff);
     else   return { ms: 0, mm: 0, mr: 0};
 
 }
 
-export function ansiSettingsOverwrite(s1: AnsiSettings, s2: AnsiSettings): AnsiSettings {
+export function settingsOverwrite(s1: Settings, s2: Settings): Settings {
 
-    let s: AnsiSettings = { ... s1 };
+    let s: Settings = { ... s1 };
 
     if (s2.fg) s.fg=s2.fg;
     if (s2.bg) s.bg=s2.bg;
@@ -328,9 +323,9 @@ export function ansiSettingsOverwrite(s1: AnsiSettings, s2: AnsiSettings): AnsiS
     return s;
 }    
 
-export function ansiSettingsUpdate(s1: AnsiSettings, s2: AnsiSettings): AnsiSettings {
+export function settingsUpdate(s1: Settings, s2: Settings): Settings {
 
-    let s: AnsiSettings = { ... s1 };
+    let s: Settings = { ... s1 };
 
     if (s2.fg && (!s.fg || s.fg==='39')) s.fg=s2.fg;
     if (s2.bg && (!s.bg || s.bg==='49')) s.bg=s2.bg;
@@ -343,9 +338,9 @@ export function ansiSettingsUpdate(s1: AnsiSettings, s2: AnsiSettings): AnsiSett
     return s;
 }
 
-function ansiSettingsBG(ss: AnsiSettings) {
+function settingsBG(ss: Settings) {
 
-    let s: AnsiSettings = { ms: ss.ms, mm: ss.mm, mr: ss.mr };
+    let s: Settings = { ms: ss.ms, mm: ss.mm, mr: ss.mr };
 
     if (ss.fg) {
         switch (ss.fg.charAt(0)) {
@@ -361,9 +356,9 @@ function ansiSettingsBG(ss: AnsiSettings) {
     return ss;
 }
 
-export function ansiStateUpdate(s: AnsiState, ss: AnsiSettings): AnsiState {
+export function stateUpdate(s: State, ss: Settings): State {
 
-    let sr: AnsiState = { ms: (s.ms & (~(ss.mm|ss.mr))) | ss.ms, mm: (s.mm | ss.mm) & (~ss.mr), mr: 0 };
+    let sr: State = { ms: (s.ms & (~(ss.mm|ss.mr))) | ss.ms, mm: (s.mm | ss.mm) & (~ss.mr), mr: 0 };
             
     if (!ss.fg) {
         if (s.fg) sr.fg=s.fg;
@@ -385,10 +380,10 @@ export function ansiStateUpdate(s: AnsiState, ss: AnsiSettings): AnsiState {
     return sr;
 }    
 
-export function ansiStateApply(s: AnsiState, ss: AnsiSettings): AnsiState {
+export function stateApply(s: State, ss: Settings): State {
 
     const mm = (ss.mm & (~s.mm)) | ss.mr;
-    let sr: AnsiState = { ms: (s.ms & (~mm)) | ss.ms, mm: (s.mm & (~mm)) | ss.mm, mr: 0 };
+    let sr: State = { ms: (s.ms & (~mm)) | ss.ms, mm: (s.mm & (~mm)) | ss.mm, mr: 0 };
         
     if (!s.fg) {
         if (ss.fg && ss.fg!=='39') sr.fg=ss.fg;
@@ -407,7 +402,7 @@ export function ansiStateApply(s: AnsiState, ss: AnsiSettings): AnsiState {
     return sr;
 }
 
-function ansiStateModifiersShow(m: number): string {
+function stateModifiersShow(m: number): string {
 
     let r: string = '';
 
@@ -424,7 +419,7 @@ function ansiStateModifiersShow(m: number): string {
     return r;
 }
 
-function ansiStateShow(s: AnsiState | AnsiSettings): string {
+function stateShow(s: State | Settings): string {
 
     let r:  string = '{';
     let rs: string = '';
@@ -432,14 +427,14 @@ function ansiStateShow(s: AnsiState | AnsiSettings): string {
     if (s.fg) { r=r+rs+"fg:'"+s.fg+"'"; rs=',' }
     if (s.bg) { r=r+rs+"bg:'"+s.bg+"'"; rs=',' }
 
-    if (s.ms) { r=r+rs+'ms:'+ansiStateModifiersShow(s.ms); rs=',' };
-    if (s.mm) { r=r+rs+'mm:'+ansiStateModifiersShow(s.ms); rs=',' };
-    if ((s as AnsiSettings).mr) { r=r+rs+'mr:'+ansiStateModifiersShow(s.ms); rs=',' };
+    if (s.ms) { r=r+rs+'ms:'+stateModifiersShow(s.ms); rs=',' };
+    if (s.mm) { r=r+rs+'mm:'+stateModifiersShow(s.ms); rs=',' };
+    if ((s as Settings).mr) { r=r+rs+'mr:'+stateModifiersShow(s.ms); rs=',' };
 
     return r+'}';
 }
 
-export function ansiSplit(s: string, as?: AnsiState): AnsiStringParts {
+export function ansiSplit(s: string, as?: State): AnsiStringParts {
 
     as = as ?? ANSI_NO_STATE;
 
@@ -455,7 +450,7 @@ export function ansiSplit(s: string, as?: AnsiState): AnsiStringParts {
             const m = ansiSeqRegExp.exec(r);
             if (!m) break;
             if (m.index>0) ss.push(as,r.slice(0,m.index));
-            as=ansiStateUpdate(as,ansiSeqMatch2Settings(m,ff));
+            as=stateUpdate(as,escSeqMatch2Settings(m,ff));
             r=r.slice(m.index+m[0].length);
         }
         if (r) ss.push(as,r);
@@ -463,13 +458,13 @@ export function ansiSplit(s: string, as?: AnsiState): AnsiStringParts {
     }
 }
 
-function ansiSettingsName(ss: AnsiSettings)
+function settingsName(ss: Settings)
 
 {  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
    return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`
 }
 
-export function ansiMakeState(s: AnsiState, ss: AnsiState): string {
+export function ansiMakeState(s: State, ss: State): string {
 
     let sr: string = '';
     let sx;
@@ -568,11 +563,11 @@ export function ansiMakeState(s: AnsiState, ss: AnsiState): string {
     return sr ? '\x1B['+sr.slice(0,-1)+'m' : ''
 }
 
-export class AnsiString {
+export class AnsiStringList {
 
     parts: AnsiStringParts;
 
-    constructor(s: string, as?: AnsiState)
+    constructor(s: string, as?: State)
 
     {   this.parts=ansiSplit(s,as);
     }
@@ -584,7 +579,7 @@ export class AnsiString {
 
         for (const p of this.parts) {
             if (typeof p !== 'string') {
-                lx=lx+ls+ansiStateShow(p);
+                lx=lx+ls+stateShow(p);
             }
             else {
                 lx=lx+ls+"'"+p+"'";
@@ -616,14 +611,14 @@ export class AnsiString {
         return l.join('');
     }
 
-    applySettings(ss: AnsiSettings)  {
+    applySettings(ss: Settings)  {
 
         const p = this.parts;
         const l = p.length;
 
         for (let i=0;i<l;++i) {
             if (typeof p[i] === 'string') continue;
-            p[i]=ansiStateApply(p[i] as AnsiState,ss);
+            p[i]=stateApply(p[i] as State,ss);
         }
     }
 
@@ -650,18 +645,18 @@ export class AnsiString {
         if (b) this.parts.push(ANSI_NO_STATE,b);
     }
 
-    addBackWithState(s: AnsiState, b: string | undefined) {
+    addBackWithState(s: State, b: string | undefined) {
 
         if (b) this.parts.push(s,b);
     }
 
 }
 
-function applyStyle(sx: any, as: AnsiState, ss: AnsiSettings) {
+function applyStyle(sx: any, as: State, ss: Settings) {
 
 //  console.log("ApplyStyle('"+sx+"',"+ansiStateShow(as)+","+ansiStateShow(ss)+")");
 
-    let asl=new AnsiString(''+sx,as)
+    let asl=new AnsiStringList(''+sx,as)
 //  console.log("ASI",asl.showParts());
 
     asl.applySettings(ss);
@@ -672,7 +667,7 @@ function applyStyle(sx: any, as: AnsiState, ss: AnsiSettings) {
 interface ConsoleStyleData {
 
     styler: ConsoleStyler
-    set:    AnsiSettings
+    set:    Settings
 
 }
 
@@ -714,7 +709,7 @@ const consoleStylesHandler = {
 
 // export type ConsoleStyleFunction = (s: string | AnsiString) => typeof s;
 export type ConsoleStyles        = { [key: string] : ConsoleStyle };
-export type ConsoleStyle         = { [key: string] : ConsoleStyle, (s: string): string, (s: AnsiString): AnsiString };
+export type ConsoleStyle         = { [key: string] : ConsoleStyle, (s: string): string, (s: AnsiStringList): AnsiStringList };
 
 export interface ConsoleStylerOptions {
 
@@ -764,7 +759,7 @@ export class ConsoleStyler {
         sd._emptyStyle=this._createStyle(ANSI_NO_SETTINGS);
         this._sd=sd as ConsoleStylesData;
 
-        sd.styles['none']=sd.styles[ansiSettingsName(ANSI_NO_SETTINGS)]=sd._emptyStyle;
+        sd.styles['none']=sd.styles[settingsName(ANSI_NO_SETTINGS)]=sd._emptyStyle;
 
         for (const [ n, c ] of CONSOLE_STYLE_COLORS)
             this._ctorColor(n,c);
@@ -792,7 +787,7 @@ export class ConsoleStyler {
 
     f(s: string, final: boolean = true): string {
 
-        let asl = new AnsiString('');
+        let asl = new AnsiStringList('');
 
         const as = final ? ANSI_NO_STATE_FINAL : this._initialState;
 
@@ -821,14 +816,14 @@ export class ConsoleStyler {
             this._fmtRex=fx
     }
 
-    byName(nn: string, ss?: AnsiSettings): ConsoleStyle {
+    byName(nn: string, ss?: Settings): ConsoleStyle {
 
         let s:  ConsoleStyle;
 
         s=this._sd.styles[nn];
         if (s) {
             if (!ss) return s;
-            ss=ansiSettingsOverwrite(ss,this._styleSettings(s))
+            ss=settingsOverwrite(ss,this._styleSettings(s))
             return this._settingsStyle(ss);
         }
 
@@ -840,12 +835,12 @@ export class ConsoleStyler {
 
         if (typeof s === 'string') s=this.byName(s);
 
-        this._sd.styles[n]=this._sd.styles[ansiSettingsName(this._styleSettings(s))]=s;
+        this._sd.styles[n]=this._sd.styles[settingsName(this._styleSettings(s))]=s;
     }
 
     showEscape(s: string, sx?: ConsoleStyle | string): string {
 
-        let ss: AnsiSettings;
+        let ss: Settings;
 
         s=s.replace(/\x1B/g,'␛');
 
@@ -856,7 +851,7 @@ export class ConsoleStyler {
         else 
             ss=this._styleSettings(sx);
 
-        const as = ansiStateApply(ANSI_NO_STATE,ss);
+        const as = stateApply(ANSI_NO_STATE,ss);
         const e1 = ansiMakeState(ANSI_NO_STATE,as);
         const e2 = ansiMakeState(as,ANSI_NO_STATE);
 
@@ -868,15 +863,15 @@ export class ConsoleStyler {
     protected _sd: ConsoleStylesData;
 
     protected _notModifiers: boolean;
-    protected _initialState: AnsiState;
+    protected _initialState: State;
 
     // @ts-expect-error
     protected _fmtRex: RegExp
 
-    protected _ctorStyle(n: string, ss: AnsiSettings): void {
+    protected _ctorStyle(n: string, ss: Settings): void {
 
         const cs = this._createStyle(ss);
-        this._sd.styles[n]=this._sd.styles[ansiSettingsName(ss)]=cs;
+        this._sd.styles[n]=this._sd.styles[settingsName(ss)]=cs;
     }
 
     protected _ctorColor(n: string, c: number): void {
@@ -909,7 +904,7 @@ export class ConsoleStyler {
         return 'not'+n.charAt(0).toUpperCase()+n.slice(1);
     }
 
-    protected _createStyle(ss: AnsiSettings): ConsoleStyle {
+    protected _createStyle(ss: Settings): ConsoleStyle {
 
         const as = this._initialState;
         const sd = function(sx: any) { return applyStyle(sx,as,ss); }
@@ -920,14 +915,14 @@ export class ConsoleStyler {
         return new Proxy<ConsoleStyleData>(sd,consoleStyleHandler) as unknown as ConsoleStyle;
     }
 
-    protected _styleSettings(s: ConsoleStyle): AnsiSettings {
+    protected _styleSettings(s: ConsoleStyle): Settings {
 
         return (s as any)._SETTINGS;
     }
 
-    protected _settingsStyle(ss: AnsiSettings): ConsoleStyle {
+    protected _settingsStyle(ss: Settings): ConsoleStyle {
 
-        const n = ansiSettingsName(ss);
+        const n = settingsName(ss);
         let s: ConsoleStyle = this._sd.styles[n];
 
         if (!s) this._sd.styles[n]=s=this._createStyle(ss);
@@ -935,10 +930,10 @@ export class ConsoleStyler {
         return s;
     }
 
-    protected _byName(nn: string, ss?: AnsiSettings): AnsiSettings {
+    protected _byName(nn: string, ss?: Settings): Settings {
 
         let s:  ConsoleStyle;
-        let sx: AnsiSettings;
+        let sx: Settings;
         let bg: boolean
 
         ss=ss ?? ANSI_NO_SETTINGS;
@@ -957,7 +952,7 @@ export class ConsoleStyler {
             s=this._sd.styles[n];
             if (s) {
                 sx=this._styleSettings(s);
-                if (bg) sx=ansiSettingsBG(ss);
+                if (bg) sx=settingsBG(ss);
             }
             else if (n.charAt(0)==='#')
                 sx=this._ansiHexSettings(n,bg);
@@ -968,13 +963,13 @@ export class ConsoleStyler {
             else
                 throw Error(`unknown console style '${n}'`)
 
-            ss=ansiSettingsOverwrite(ss,sx);
+            ss=settingsOverwrite(ss,sx);
         }
 
         return ss;
     }
 
-    protected _ansiC256Settings(n: string, bg: boolean = false): AnsiSettings {
+    protected _ansiC256Settings(n: string, bg: boolean = false): Settings {
 
         if (n.charAt(0)==='@') n=n.slice(1)
         const c = Number(n.slice(1));
@@ -984,7 +979,7 @@ export class ConsoleStyler {
         else    return { fg:'38;5;'+c, ms: 0, mm: 0, mr:0}
     }
 
-    protected _ansiC16Settings(n: string, bg: boolean = false): AnsiSettings {
+    protected _ansiC16Settings(n: string, bg: boolean = false): Settings {
 
         if (n.charAt(0)==='%') n=n.slice(1)
         let c = Number(n);
@@ -1005,7 +1000,7 @@ export class ConsoleStyler {
         else    return { fg:''+c, ms: 0, mm: 0, mr:0}
     }
 
-    protected _ansiHexSettings(hx: string, bg: boolean = false): AnsiSettings {
+    protected _ansiHexSettings(hx: string, bg: boolean = false): Settings {
 
         let r: number;
         let g: number;        
@@ -1028,7 +1023,7 @@ export class ConsoleStyler {
         return this._ansiRgbSettings(r,g,b,bg)
     }
 
-    protected _ansiRgbSettings(r: number, g: number, b: number, bg: boolean = false): AnsiSettings {
+    protected _ansiRgbSettings(r: number, g: number, b: number, bg: boolean = false): Settings {
 
         if (bg) return { bg: `48;2;${r};${g};${b}`, ms: 0, mm: 0, mr: 0 };
         else    return { fg: `38;2;${r};${g};${b}`, ms: 0, mm: 0, mr: 0 };
@@ -1039,7 +1034,7 @@ export class ConsoleStyler {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     }
 
-    protected _format(asl: AnsiString, as: AnsiState, str: string, asx: AnsiState | undefined): void {
+    protected _format(asl: AnsiStringList, as: State, str: string, asx: State | undefined): void {
 
         const m:any = str.match(this._fmtRex)
 
@@ -1058,11 +1053,11 @@ export class ConsoleStyler {
             // console.log("  ss: ",ansiStateShow(ss));
             if (!asx) {
                 asl.addBackWithState(as,m.groups.pre);
-                this._format(asl,as,m.groups.post,ansiStateUpdate(as,ss));
+                this._format(asl,as,m.groups.post,stateUpdate(as,ss));
             }
             else {
                 asl.addBackWithState(asx,m.groups.pre);
-                this._formatNesting(asl,as,m.groups.post,[ansiStateUpdate(asx,ss),asx])
+                this._formatNesting(asl,as,m.groups.post,[stateUpdate(asx,ss),asx])
             }
         }
         else if (asx) {
@@ -1075,7 +1070,7 @@ export class ConsoleStyler {
         }
     }
 
-    protected _formatNesting(asl: AnsiString, as: AnsiState, str: string, asx: AnsiState[]): void {
+    protected _formatNesting(asl: AnsiStringList, as: State, str: string, asx: State[]): void {
 
         const m:any = str.match(this._fmtRex)
 
@@ -1097,7 +1092,7 @@ export class ConsoleStyler {
             // console.log("  nm: ",m.groups.name);
             // console.log("  ss: ",ansiStateShow(ss));
             asl.addBackWithState(asx[0],m.groups.pre);
-            this._formatNesting(asl,as,m.groups.post,[ansiStateUpdate(asx[0],ss),...asx]);
+            this._formatNesting(asl,as,m.groups.post,[stateUpdate(asx[0],ss),...asx]);
         }
         else {
             asl.addBackWithState(asx[0],m.groups.pre);
