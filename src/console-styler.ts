@@ -1,3 +1,5 @@
+import util from 'util';
+
 export enum modifier {
     BOLD             = 0x0001,
     DIM              = 0x0002,
@@ -594,21 +596,40 @@ export class AnsiStringList {
 
 //      console.log('toString',this.showParts());
 
-        let s = ANSI_NO_STATE;
-        let l = this.parts.map(x => {
-            if (typeof x !== 'string') {
-                const e = ansiMakeState(s,x);
-                s=x;
-                return e;
+        let s  = ANSI_NO_STATE;
+        let ss = ANSI_NO_STATE;
+        let r  = '';
+
+        for (let x of this.parts) {
+            if (typeof x !== 'string')
+                ss=x;
+            else if (x.indexOf('\n')<0) {
+                r=r+ansiMakeState(s,ss)+x;
+                s=ss;
             }
-            else
-                return x;
-        })
-        l.push(ansiMakeState(s,ANSI_NO_STATE));
+            else if (x==='\n' || x==='\r\n') {
+                r=r+ansiMakeState(s,ANSI_NO_STATE)+x;
+                s=ANSI_NO_STATE;
+            }
+            else {
+                let m: RegExpExecArray | null;
+                for (;;) {
+                    m=/^([^\r\n]*)(\r?\n)(.*)$/ms.exec(x);
+                    if (!m) break;
+                    if (m[1]) { r=r+ansiMakeState(s,ss)+m[1]; s=ss; }
+                    r=r+ansiMakeState(s,ANSI_NO_STATE)+m[2];
+                    s=ANSI_NO_STATE
+                    x=m[3];
+                }
+                if (x) { r=r+ansiMakeState(s,ss)+x; s=ss; }
+            }
+        }
 
-//      console.log('toString ->',l.join('').replace(/\x1B(\[[0-9;]*m)/g,'\x1B[4;31m€$1\x1B[0m'));
+        r=r+ansiMakeState(s,ANSI_NO_STATE);
 
-        return l.join('');
+//      console.log('toString ->',r.replace(/\x1B(\[[0-9;]*m)/g,'\x1B[4;31m€$1\x1B[0m'));
+
+        return r;
     }
 
     applySettings(ss: Settings)  {
@@ -649,7 +670,6 @@ export class AnsiStringList {
 
         if (b) this.parts.push(s,b);
     }
-
 }
 
 function applyStyle(sx: any, as: State, ss: Settings) {
@@ -810,7 +830,7 @@ export class ConsoleStyler {
                        ')|(?:' +
                        this._escapeRegExp(fx[1]) +
                        '))(?<post>.*)$'
-            this._fmtRex=new RegExp(rx,'i')
+            this._fmtRex=new RegExp(rx,'ms')
         }
         else
             this._fmtRex=fx

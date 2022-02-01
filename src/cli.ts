@@ -51,53 +51,51 @@ import { ConsoleStyler, ConsoleStyle } from './console-styler'
 let cs = new ConsoleStyler({});
 let s1: string;
 
-/*
-console.log(cs.s.red('Silvan'))
-console.log(cs.s.underline('Silvan'))
-console.log(cs.s.underline(cs.s.red('Silvan')))
-console.log(cs.s.red.underline('Silvan'))
-console.log(cs.s.underline.red('Silvan'))
-console.log(cs.s['underline.blue']('Silvan'))
-console.log(cs.s['#804000']('Silvan'))
-*/
+let css = { 'SGR': cs.s.red, '\n': cs.s.blue, '?': cs.s.green };
+// let css = { '\n': cs.s.blue, '?': cs.s.green };
 
+console.log(cs.showControl('ABC',css));
+console.log(cs.showControl('ABC\nDEF',css));
+console.log(cs.showControl('\x1B[32mABC\nDEF\x1B[m',css));
+console.log(cs.showControl('123\x1B[32mABC\nDEF\x1B[m',css));
+console.log(cs.showControl('123\x07ABC\nDEF\x07GHI',css));
 
-/*
-s1=cs.s.red('Silvan')
-s1=cs.s.underline('Rolf '+s1+' Greverus')
-console.log(s1);
-console.log(cs.showEscape(s1))
-console.log(cs.showEscape(s1,'red'))
-*/
+// console.log(cs.s.red('Silvan'))
+// console.log(cs.s.underline('Silvan'))
+// console.log(cs.s.underline(cs.s.red('Silvan')))
+// console.log(cs.s.red.underline('Silvan'))
+// console.log(cs.s.underline.red('Silvan'))
+// console.log(cs.s['underline.blue']('Silvan'))
+// console.log(cs.s['#804000']('Silvan'))
 
-/*
-s1=cs.f("{{underline|Rolf {{red|Si{{bold|lv}}an}} Greverus}}");
-console.log(s1);
-console.log(cs.showEscape(s1,'red'))
-*/
+// s1=cs.s.red('Silvan')
+// s1=cs.s.underline('Rolf '+s1+' Greverus')
+// console.log(s1);
+// console.log(cs.showEscape(s1))
+// console.log(cs.showEscape(s1,'red'))
 
-/*
-s1=cs.s.underline(`Rolf ${cs.s.red(`Si${cs.s.bold('lv')}an`)} Greverus`);
-console.log(s1);
-console.log(cs.showEscape(s1,'red'))
+// s1=cs.f("{{underline|Rolf {{red|Si{{bold|lv}}an}} Greverus}}");
+// console.log(s1);
+// console.log(cs.showEscape(s1,'red'))
 
-cs = new ConsoleStyler({ notModifiers: true });
-s1=cs.s.blink.gray(`Rolf ${cs.s.red.notBlink(`Si${cs.s.blue('lv')}an`)} Greverus`);
-console.log(s1);
-console.log(cs.showEscape(s1,'red'))
-*/
+// s1=cs.s.underline(`Rolf ${cs.s.red(`Si${cs.s.bold('lv')}an`)} Greverus`);
+// console.log(s1);
+// console.log(cs.showEscape(s1,'red'))
 
-/*
-cs.alias('err','underline+red');
-s1=cs.s.err('FEHLER');
-console.log(s1);
-console.log(cs.showEscape(s1,'red'))
-*/
+// cs = new ConsoleStyler({ notModifiers: true });
+// s1=cs.s.blink.gray(`Rolf ${cs.s.red.notBlink(`Si${cs.s.blue('lv')}an`)} Greverus`);
+// console.log(s1);
+// console.log(cs.showEscape(s1,'red'))
 
-s1=cs.f('Text: "{{underline|Die {{red|r{{strike|ot}}e}} Farbe}}"')
-console.log(s1);
-console.log(cs.showEscape(s1))
-console.log(cs.showEscape(s1,'red'))
+// cs.alias('err','underline+red');
+// s1=cs.s.err('FEHLER');
+// console.log(s1);
+// console.log(cs.showEscape(s1,'red'))
+
+// s1=cs.f('Text: "{{underline|Die {{red|r{{strike|ot}}e}} Farbe}}"')
+// console.log(s1);
+// console.log(cs.showEscape(s1))
+// console.log(cs.showEscape(s1,'red'))
 
 // s1=cs.f('{{blue|Text: "{{underline|Die {{red|r{{strike|ot}}e}} Farbe}}"}}')
 // console.log(s1);
