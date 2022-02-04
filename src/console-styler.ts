@@ -643,6 +643,16 @@ export class AnsiStringList {
         }
     }
 
+    applyStringFunction(f: (s: string) => string)  {
+
+        const p = this.parts;
+        const l = p.length;
+
+        for (let i=0;i<l;++i) {
+            if (typeof p[i] === 'string') p[i]=f(p[i] as string);
+        }
+    }
+
     add(f: string | undefined, b: string | undefined ) {
 
         if (f && b) {
@@ -670,6 +680,36 @@ export class AnsiStringList {
 
         if (b) this.parts.push(s,b);
     }
+
+    addFrontSeq(s: string, as?: State) {
+
+        if (!s) return;
+
+        if (s.indexOf('\x1B')>=0) {
+            let lx = ansiSplit(s,as);
+            this.parts=[...lx,...this.parts];
+        }
+        else
+            this.parts=[as ?? ANSI_NO_STATE, s, ...this.parts];
+    }
+
+    addBackSeq(s: string, as?: State) {
+
+        if (!s) return;
+
+        if (s.indexOf('\x1B')>=0) {
+            let lx = ansiSplit(s,as);
+            this.parts=[...this.parts, ...lx];
+        }
+        else
+            this.parts.push(as ?? ANSI_NO_STATE, s);
+    }
+
+    addBackList(l2: AnsiStringList) {
+
+        this.parts=[...this.parts,...l2.parts];
+
+    }
 }
 
 function applyStyle(sx: any, as: State, ss: Settings) {
@@ -684,11 +724,33 @@ function applyStyle(sx: any, as: State, ss: Settings) {
     return asl.toString();
 }
 
+export type ConsoleStyleFunction = (s: string | AnsiStringList, as?: State) => string | AnsiStringList;
+export type ConsoleStyleStringFunction = (s: string) => string;
+export type ConsoleStyleListFunction = (s: AnsiStringList) => AnsiStringList;
+type ConsoleStyleSettings = Settings | (Settings | ConsoleStyleFunction)[];
+export type ConsoleStyleAliasFunction = ConsoleStyleFunction | ConsoleStyleStringFunction | ConsoleStyleListFunction;
+
+function applyStyleEx(sx: any, as: State, sss: (Settings | ConsoleStyleFunction)[]) {
+
+    let asl: string | AnsiStringList = ''+sx;
+
+    for (const ss of sss) {
+        if (typeof ss === 'function') {
+            asl=ss(asl,as);
+        }
+        else {
+            if (typeof asl === 'string') asl=new AnsiStringList(asl,as);
+            asl.applySettings(ss);
+        }
+    }
+
+    return asl.toString();
+}
+
 interface ConsoleStyleData {
 
-    styler: ConsoleStyler
-    set:    Settings
-
+    styler: ConsoleStyler;
+    set:    ConsoleStyleSettings;
 }
 
 const consoleStyleHandler = {
@@ -802,20 +864,43 @@ export class ConsoleStyler {
         this._ctorStyle('reset',{ ms: 0, mm: 0, mr: modifier.STANDARD});
         this._ctorStyle('final',{ ms: modifier.FINAL, mm: modifier.FINAL, mr: 0});
 
+        this.alias('upper',(x: string) => x.toUpperCase(),'SS');
+        this.alias('lower',(x: string) => x.toLowerCase(),'SS');
+        this.alias('sgr',this._sgrFunc.bind(this,'?'),'X');
+
         this.setFormat(['{{','}}','|'])
     }
 
     f(s: string, final: boolean = true): string {
 
-        let asl = new AnsiStringList('');
+        const as = final ? ANSI_NO_STATE_FINAL : ANSI_NO_STATE;
+        let   stk: any[] = ['']
+        let   i: number = 0
 
-        const as = final ? ANSI_NO_STATE_FINAL : this._initialState;
+        for (;;) {
+            const m:any = s.match(this._fmtRex)
+            if (!m) {
+                if (s) stk[i]=this._fAppend(stk[i],s);
+                break;
+            }
+            if (m.groups.pre) stk[i]=this._fAppend(stk[i],m.groups.pre);
+            if (m.groups.name) {
+                stk[++i]=this._byName(m.groups.name)
+                stk[++i]='';
+            }
+            else if (i>0) {
+                i-=2;
+                stk[i]=this._fAppend(stk[i],this._fApply(stk[i+2],stk[i+1],as),as);
+            }
+            s=m.groups.post
+        }
 
-        this._format(asl,as,s,undefined)
+        while (i>0) {
+            i-=2;
+            stk[i]=this._fAppend(stk[i],this._fApply(stk[i+2],stk[i+1]),as);
+        }
 
-        // console.log(asl.showParts());
-        
-        return asl.toString();
+        return stk[0].toString();
     }
 
     setFormat(fx: [ string, string ] | [ string, string, string ] | RegExp) {
@@ -836,14 +921,14 @@ export class ConsoleStyler {
             this._fmtRex=fx
     }
 
-    byName(nn: string, ss?: Settings): ConsoleStyle {
+    byName(nn: string, ss?: ConsoleStyleSettings): ConsoleStyle {
 
         let s:  ConsoleStyle;
 
         s=this._sd.styles[nn];
         if (s) {
             if (!ss) return s;
-            ss=settingsOverwrite(ss,this._styleSettings(s))
+            ss=this._settingsOverwrite(ss,this._styleSettings(s))
             return this._settingsStyle(ss);
         }
 
@@ -851,31 +936,38 @@ export class ConsoleStyler {
         return this._settingsStyle(ss);
     }
 
-    alias(n: string, s: ConsoleStyle | string): void {
+    alias(n: string, s: ConsoleStyle | string | ConsoleStyleAliasFunction, fType: string = 'S'): void {
 
-        if (typeof s === 'string') s=this.byName(s);
+        if (typeof s === 'string')
+            s=this.byName(s);
+        else if (typeof s === 'function')
+            s=this._styleFromFunction(s,fType);
 
-        this._sd.styles[n]=this._sd.styles[settingsName(this._styleSettings(s))]=s;
+        this._sd.styles[n]=s as ConsoleStyle;
     }
 
     showEscape(s: string, sx?: ConsoleStyle | string): string {
 
-        let ss: Settings;
+        let ss: ConsoleStyleSettings;
 
         s=s.replace(/\x1B/g,'␛');
 
-        if (!sx) return s;
+        if (sx==='?') sx=undefined;
 
-        if (typeof sx === 'string')
-            ss=this._byName(sx);
-        else 
-            ss=this._styleSettings(sx);
-
-        const as = stateApply(ANSI_NO_STATE,ss);
-        const e1 = ansiMakeState(ANSI_NO_STATE,as);
-        const e2 = ansiMakeState(as,ANSI_NO_STATE);
-
-        return s.replace(/␛\[[0-9;]*m/g,e1+'$&'+e2);
+        if (sx) {
+            let r = s;
+            let m: RegExpExecArray | null;
+            if (typeof sx === 'string') sx=this.byName(sx);
+            for (s='';;) {
+                m=/^(.*?)(␛\[[0-9;]*m)(.*)$/ms.exec(r);
+                if (!m) break;
+                s+=m[1]+sx(m[2]);
+                r=m[3];
+            }
+            s+=r;
+        }
+        
+        return s;
     }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -924,36 +1016,78 @@ export class ConsoleStyler {
         return 'not'+n.charAt(0).toUpperCase()+n.slice(1);
     }
 
-    protected _createStyle(ss: Settings): ConsoleStyle {
+    protected _createStyle(ss: ConsoleStyleSettings): ConsoleStyle {
 
         const as = this._initialState;
-        const sd = function(sx: any) { return applyStyle(sx,as,ss); }
-    
+        const sd: ConsoleStyleData =
+                    (Array.isArray(ss) ?
+                        (function(sx: any) { return applyStyleEx(sx,as,ss); })
+                        :
+                        (function(sx: any) { return applyStyle(sx,as,ss); })) as unknown as ConsoleStyleData;
+
         sd.styler=this;
         sd.set=ss;
 
         return new Proxy<ConsoleStyleData>(sd,consoleStyleHandler) as unknown as ConsoleStyle;
     }
 
-    protected _styleSettings(s: ConsoleStyle): Settings {
+    protected _styleFromFunction(f: ConsoleStyleAliasFunction, fType: string): ConsoleStyle {
+
+        let fx: ConsoleStyleFunction;
+
+        switch (fType.toUpperCase()) {
+            case 'X':
+                fx=f as ConsoleStyleFunction;
+                break;
+            case 'L':
+                fx=function(sx: string | AnsiStringList, as?: State) {
+                    if (typeof sx === 'string') sx=new AnsiStringList(sx,as);
+                    return (f as ConsoleStyleListFunction)(sx);
+                };
+                break;
+            case 'SS':
+                fx=function(sx: string | AnsiStringList, as?: State) {
+                    if (typeof sx === 'string') {
+                        return (f as ConsoleStyleStringFunction)(sx);
+                    }
+                    else {
+                        sx.applyStringFunction(f as ConsoleStyleStringFunction);
+                        return sx;
+                    }
+                };
+                break;
+            default:
+                fx=function(sx: string | AnsiStringList, as?: State) {
+                    return ((f as ConsoleStyleStringFunction)(sx.toString()));
+                };
+        }
+
+        return this._createStyle([fx]);
+    }
+
+    protected _styleSettings(s: ConsoleStyle): ConsoleStyleSettings {
 
         return (s as any)._SETTINGS;
     }
 
-    protected _settingsStyle(ss: Settings): ConsoleStyle {
+    protected _settingsStyle(ss: ConsoleStyleSettings): ConsoleStyle {
 
-        const n = settingsName(ss);
-        let s: ConsoleStyle = this._sd.styles[n];
+        if (Array.isArray(ss)) {
+            return this._createStyle(ss);
+        }
+        else {
+            const n = settingsName(ss);
+            let s: ConsoleStyle = this._sd.styles[n];
 
-        if (!s) this._sd.styles[n]=s=this._createStyle(ss);
+            if (!s) this._sd.styles[n]=s=this._createStyle(ss);
 
-        return s;
+            return s;  }
     }
 
-    protected _byName(nn: string, ss?: Settings): Settings {
+    protected _byName(nn: string, ss?: ConsoleStyleSettings): ConsoleStyleSettings {
 
         let s:  ConsoleStyle;
-        let sx: Settings;
+        let sx: ConsoleStyleSettings;
         let bg: boolean
 
         ss=ss ?? ANSI_NO_SETTINGS;
@@ -972,7 +1106,7 @@ export class ConsoleStyler {
             s=this._sd.styles[n];
             if (s) {
                 sx=this._styleSettings(s);
-                if (bg) sx=settingsBG(ss);
+                if (bg) sx=this._settingsBG(ss);
             }
             else if (n.charAt(0)==='#')
                 sx=this._ansiHexSettings(n,bg);
@@ -983,10 +1117,28 @@ export class ConsoleStyler {
             else
                 throw Error(`unknown console style '${n}'`)
 
-            ss=settingsOverwrite(ss,sx);
+            ss=this._settingsOverwrite(ss,sx);
         }
 
         return ss;
+    }
+
+    protected _settingsOverwrite(ss: ConsoleStyleSettings, sx: ConsoleStyleSettings)
+
+    {   if (Array.isArray(ss))
+            return ss.concat(sx);
+        else if (Array.isArray(sx))
+            return [ss,...sx]
+        else
+            return settingsOverwrite(ss,sx);
+    }
+
+    protected _settingsBG(ss: ConsoleStyleSettings): ConsoleStyleSettings {
+
+        if (Array.isArray(ss))
+            return ss.map(x => (typeof x !== 'function') ? settingsBG(x) : x);
+        else
+            return settingsBG(ss);
     }
 
     protected _ansiC256Settings(n: string, bg: boolean = false): Settings {
@@ -1054,70 +1206,49 @@ export class ConsoleStyler {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     }
 
-    protected _format(asl: AnsiStringList, as: State, str: string, asx: State | undefined): void {
+    protected _fAppend(s1: string | AnsiStringList, s2: string | AnsiStringList, as?: State) {
 
-        const m:any = str.match(this._fmtRex)
+        if (!s1) return s2;
+        if (!s2) return s1;
 
-        // console.log("_format:")
-        // console.log("  asl:",asl.showParts());
-        // console.log("  as: ",ansiStateShow(as));
-        // console.log("  str:",str);
-        // if (asx) console.log("  asx:",ansiStateShow(asx));
-
-        if (!m)
-            asl.addBackWithState(as,str);
-
-        else if (m.groups.name) {
-            const ss  = this._byName(m.groups.name);
-            // console.log("  nm: ",m.groups.name);
-            // console.log("  ss: ",ansiStateShow(ss));
-            if (!asx) {
-                asl.addBackWithState(as,m.groups.pre);
-                this._format(asl,as,m.groups.post,stateUpdate(as,ss));
-            }
-            else {
-                asl.addBackWithState(asx,m.groups.pre);
-                this._formatNesting(asl,as,m.groups.post,[stateUpdate(asx,ss),asx])
-            }
+        if (typeof s1 === 'string') {
+            if (typeof s2 === 'string') return s1+s2;
+            s2.addFrontSeq(s1,as);
+            return s2;
         }
-        else if (asx) {
-            asl.addBackWithState(asx,m.groups.pre);
-            this._format(asl,as,m.groups.post,undefined)
+        else if (typeof s2 === 'string') {
+            s1.addBackSeq(s2,as);
+            return s1;
         }
         else {
-            asl.addBackWithState(as,m.groups.pre);
-            this._format(asl,as,m.groups.post,undefined)
+            s1.addBackList(s2)
+            return s1;
         }
     }
 
-    protected _formatNesting(asl: AnsiStringList, as: State, str: string, asx: State[]): void {
+    protected _fApply(sx: string | AnsiStringList, ss: ConsoleStyleSettings, as?: State) {
 
-        const m:any = str.match(this._fmtRex)
-
-        // console.log("_formatNesting:")
-        // console.log("  asl:",asl.showParts());
-        // console.log("  as: ",ansiStateShow(as));
-        // console.log("  str:",str);
-        // let spc: string = "  asx:"
-        // for (const asxx of asx) {
-        //     console.log(spc,ansiStateShow(asxx));
-        //     spc=' '+spc.replace(/[a-z:]/g,' ');
-        // }
-
-        if (!m)
-            asl.addBackWithState(asx[0],str);
-
-        else if (m.groups.name) {
-            const ss = this._byName(m.groups.name);
-            // console.log("  nm: ",m.groups.name);
-            // console.log("  ss: ",ansiStateShow(ss));
-            asl.addBackWithState(asx[0],m.groups.pre);
-            this._formatNesting(asl,as,m.groups.post,[stateUpdate(asx[0],ss),...asx]);
+        if (Array.isArray(ss)) {
+            for (const sss of ss) {
+                if (typeof sss === 'function')
+                    sx=sss(sx,as);
+                else {
+                    if (typeof sx === 'string') sx=new AnsiStringList(sx,as);
+                    sx.applySettings(sss);
+                }
+            }
         }
         else {
-            asl.addBackWithState(asx[0],m.groups.pre);
-            if (asx.length==2) this._format(asl,as,m.groups.post,asx[1]);
-            else               this._formatNesting(asl,as,m.groups.post,asx.slice(1));
-        }            
+            if (typeof sx === 'string') sx=new AnsiStringList(sx,as);
+            sx.applySettings(ss);
+        }
+
+        return sx;
+    }
+
+    protected _sgrFunc(sx: string | ConsoleStyle, s: string | AnsiStringList, as?: State): string {
+
+        return this.showEscape(s.toString(),sx);
+
     }
 }
