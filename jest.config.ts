@@ -19,6 +19,7 @@ const config: Jest.Config.InitialOptions = {
   coveragePathIgnorePatterns: ['/node_modules/'],
   coverageDirectory: '../.coverage',
   testEnvironment: 'node',
+  verbose: true,
 };
 
 export default config;
