@@ -56,4 +56,34 @@ describe('Formating with cs.s ...', () => {
       .toBe('␛[31mDie ␛[1mRed␛[22m Farbe␛[0m');
   })
 
+  it('Bright Black I', () => {
+    expect(cs.s.sgr(cs.s.bright.black('Bright Black')))
+      .toBe('␛[90mBright Black␛[0m');
+  })
+  
+  it('Bright Black II', () => {
+    expect(cs.s.sgr(cs.s.blackBright('Bright Black')))
+      .toBe('␛[90mBright Black␛[0m');
+  })
+  
+  it('Dark White', () => {
+    expect(cs.s.sgr(cs.s.dark.white('Dark White')))
+      .toBe('␛[37mDark White␛[0m');
+  })
+  
+  it('Green Background I', () => {
+    expect(cs.s.sgr(cs.s.bgGreen('Green')))
+      .toBe('␛[42mGreen␛[0m');
+  })
+
+  it('Green Background II', () => {
+    expect(cs.s.sgr(cs.s.bg.green('Green')))
+      .toBe('␛[42mGreen␛[0m');
+  })
+
+  it('Green Background III', () => {
+    expect(cs.s.sgr(cs.s['bg.green']('Green')))
+      .toBe('␛[42mGreen␛[0m');
+  })
+
 })
