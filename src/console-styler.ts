@@ -1,769 +1,26 @@
 import util from 'util';
-
-export enum modifier {
-    BOLD             = 0x0001,
-    DIM              = 0x0002,
-    BOLD_DIM         = BOLD | DIM,
-    ITALIC           = 0x0004,
-    UNDERLINE        = 0x0008,
-    BLINK            = 0x0010,
-    RAPID_BLINK      = 0x0020,
-    ANY_BLINK        = BLINK | RAPID_BLINK,
-    INVERSE          = 0x0040,
-    HIDDEN           = 0x0080,
-    STRIKE_THROUGH   = 0x0100,
-    DOUBLE_UNDERLINE = 0x0200,
-    ANY_UNDERLINE    = UNDERLINE | DOUBLE_UNDERLINE,
-    STANDARD         = 0x03FF,
-
-    FINAL            = 0x00010000,
-    SPECIAL          = 0x00010000,
-
-    ALL              = 0x000101FF
-};
-
-export interface ModifierSettings {
-
-    ms: number,
-    mm: number,
-    mr: number
-}
-
-export interface State extends ModifierSettings {
-
-    fg?: string;
-    bg?: string;
-}
-
-const ANSI_NO_STATE:       State = { ms: 0, mm: 0, mr: 0 }
-const ANSI_NO_STATE_FINAL: State = { ms: modifier.FINAL, mm: modifier.FINAL, mr: 0 }
-
-export interface Settings extends ModifierSettings {
-
-    fg?: string;
-    bg?: string;
-}
-
-const ANSI_NO_SETTINGS: Settings = { ms: 0, mm: 0, mr: 0 }
-const ANSI_RESET_SETTINGS: Settings = { fg: '39', bg: '39', ms: 0, mm: 0, mr: modifier.STANDARD }
-
-export type AnsiStringParts = (State | string)[];
-
-/*
-const ANSI_SEQ_MODIFIER = '(?:0|1|2|3|4|5|6|7|8|9|21|22|23|24|201|204)';
-
-const ANSI_SEQ_REGEX = `
-    \x1B\\[
-    (?<mod>${ANSI_SEQ_MODIFIER}(?:;${ANSI_SEQ_MODIFIER})*)? ;?
-    (?<fg>(?:30|31|32|33|34|35|36|37|90|91|92|93|94|95|96|97|(?:38;5;[0-9]+)|(?:38;2;[0-9]+;[0-9]+;[0-9]+)|39))? ;?
-    (?<bg>(?:40|41|42|43|44|45|46|47|100|101|102|103|104|105|106|107|(?:48;5;[0-9]+)|(?:48;2;[0-9]+;[0-9]+;[0-9]+)|49))? ;?
-    m
-`
-*/
-
-const ANSI_SEQ_REGEX = '\x1B\\[([?0-9]+(?:;[0-9]+)*)?m'
-
-export const ansiSeqRegExp = new RegExp(ANSI_SEQ_REGEX.replace(/\s+/g,''),'i')
-
-const escSeqCache      = new Map<string,Settings>();
-const escSeqCacheFinal = new Map<string,Settings>();
-
-// export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false): Settings {
-export function escSeqPars2Settings(seqPars: string, ff: boolean = false): Settings {
-
-    let ss = ff ? escSeqCacheFinal.get(seqPars) : escSeqCache.get(seqPars);
-    if (ss) return ss;
-
-    let ms: number = 0;
-    let mm: number = 0;
-    let mr: number = 0;
-    let fg: string | undefined;
-    let bg: string | undefined;
-
-//  const cc = (match[1] ?? '0').split(';').map(x => Number(x))
-    const cc = seqPars.split(';').map(x => Number(x))
-
-    let i,c: number;
-    for (i=0;i<cc.length;++i) {
-        switch (c=cc[i]) {
-            case 0:
-                mm = 0;
-                ms = 0;
-                mr = modifier.STANDARD;
-                fg = '39';
-                bg = '49';
-                break;
-            case 1:
-                mm |= modifier.BOLD_DIM;
-                ms = (ms & ~modifier.DIM) | modifier.BOLD;
-                break;
-            case 2:
-                mm |= modifier.BOLD_DIM;
-                ms = (ms & ~modifier.BOLD) | modifier.DIM;
-                break;
-            case 3:
-                mm |= modifier.ITALIC;
-                ms |= modifier.ITALIC;
-                break;
-            case 4:
-                mm |= modifier.ANY_UNDERLINE;
-                ms = (ms & ~modifier.DOUBLE_UNDERLINE) | modifier.UNDERLINE;
-                break;
-            case 5:
-                mm |= modifier.ANY_BLINK;
-                ms = (ms & ~modifier.RAPID_BLINK) | modifier.BLINK;
-                break;
-            case 6:
-                mm |= modifier.ANY_BLINK;
-                ms = (ms & ~modifier.BLINK) | modifier.RAPID_BLINK;
-                break;
-            case 7:
-                mm |= modifier.INVERSE;
-                ms |= modifier.INVERSE;
-                break;
-            case 8:
-                mm |= modifier.HIDDEN;
-                ms |= modifier.HIDDEN;
-                break;
-            case 9:
-                mm |= modifier.STRIKE_THROUGH;
-                ms |= modifier.STRIKE_THROUGH;
-                break;
-            case 21:
-                mm |= modifier.ANY_UNDERLINE;
-                ms = (ms & ~modifier.UNDERLINE) | modifier.DOUBLE_UNDERLINE;
-                break;
-            case 22:
-                if (ff) {
-                    mm &= (~modifier.BOLD_DIM);
-                    ms &= (~modifier.BOLD_DIM);
-                    mr |= modifier.BOLD_DIM;
-                }
-                else {
-                    mm |= modifier.BOLD_DIM;
-                    ms &= (~modifier.BOLD_DIM);
-                }
-                break;
-            case 23:
-                if (ff) {
-                    mm &= (~modifier.ITALIC);
-                    ms &= (~modifier.ITALIC);
-                    mr |= modifier.ITALIC;
-                }
-                else {
-                    mm |= modifier.ITALIC;
-                    ms &= (~modifier.ITALIC);
-                }
-                break;
-                break;
-            case 24:
-                if (ff) {
-                    mm &= (~modifier.ANY_UNDERLINE);
-                    ms &= (~modifier.ANY_UNDERLINE);
-                    mr |= modifier.ANY_UNDERLINE;
-                }
-                else {
-                    mm |= modifier.ANY_UNDERLINE;
-                    ms &= (~modifier.ANY_UNDERLINE);
-                }
-                break;
-            case 25:
-                if (ff) {
-                    mm &= (~modifier.ANY_BLINK);
-                    ms &= (~modifier.ANY_BLINK);
-                    mr |= modifier.ANY_BLINK;
-                }
-                else {
-                    mm |= modifier.ANY_BLINK;
-                    ms &= (~modifier.ANY_BLINK);
-                }
-                break;
-            case 27:
-                if (ff) {
-                    mm &= (~modifier.INVERSE);
-                    ms &= (~modifier.INVERSE);
-                    mr |= modifier.INVERSE;
-                }
-                else {
-                    mm |= modifier.INVERSE;
-                    ms &= (~modifier.INVERSE);
-                }
-                break;
-            case 28:
-                if (ff) {
-                    mm &= (~modifier.HIDDEN);
-                    ms &= (~modifier.HIDDEN);
-                    mr |= modifier.HIDDEN;
-                }
-                else {
-                    mm |= modifier.HIDDEN;
-                    ms &= (~modifier.HIDDEN);
-                }
-                break;
-            case 29:
-                if (ff) {
-                    mm &= (~modifier.STRIKE_THROUGH);
-                    ms &= (~modifier.STRIKE_THROUGH);
-                    mr |= modifier.STRIKE_THROUGH;
-                }
-                else {
-                    mm |= modifier.STRIKE_THROUGH;
-                    ms &= (~modifier.STRIKE_THROUGH);
-                }
-                break;
-            case 30:
-            case 31:
-            case 32:
-            case 33:
-            case 34:
-            case 35:
-            case 36:
-            case 37:
-            case 39:
-            case 90:
-            case 91:
-            case 92:
-            case 93:
-            case 94:
-            case 95:
-            case 96:
-            case 97:
-                fg=''+c;
-                break;
-            case 38:
-                if (cc[i+1]===2) {
-                    fg=`38;2;${cc[i+2]};${cc[i+3]};${cc[i+4]}`
-                    i+=4;
-                }
-                else {
-                    fg=`38;5;${cc[i+2]}`
-                    i+=2;
-                }
-                break;
-            case 40:
-            case 41:
-            case 42:
-            case 43:
-            case 44:
-            case 45:
-            case 46:
-            case 47:
-            case 49:
-            case 100:
-            case 101:
-            case 102:
-            case 103:
-            case 104:
-            case 105:
-            case 106:
-            case 107:
-                bg=''+c;
-                break;
-            case 48:
-                if (cc[i+1]===2) {
-                    bg=`48;2;${cc[i+2]};${cc[i+3]};${cc[i+4]}`
-                    i+=4;
-                }
-                else {
-                    bg=`48;5;${cc[i+2]}`
-                    i+=2;
-                }
-                break;
-            case 202:
-                mm &= (~modifier.BOLD_DIM);
-                ms &= (~modifier.BOLD_DIM);
-                mr |= modifier.BOLD_DIM;
-                break;
-            case 203:
-                mm &= (~modifier.ITALIC);
-                ms &= (~modifier.ITALIC);
-                mr |= modifier.ITALIC;
-                break;
-            case 204:
-                mm &= (~modifier.ANY_UNDERLINE);
-                ms &= (~modifier.ANY_UNDERLINE);
-                mr |= modifier.ANY_UNDERLINE;
-                break;
-            case 205:
-                mm &= (~modifier.ANY_BLINK);
-                ms &= (~modifier.ANY_BLINK);
-                mr |= modifier.ANY_BLINK;
-                break;
-            case 207:
-                mm &= (~modifier.INVERSE);
-                ms &= (~modifier.INVERSE);
-                mr |= modifier.INVERSE;
-                break;
-            case 208:
-                mm &= (~modifier.HIDDEN);
-                ms &= (~modifier.HIDDEN);
-                mr |= modifier.HIDDEN;
-                break;
-            case 209:
-                mm &= (~modifier.STRIKE_THROUGH);
-                ms &= (~modifier.STRIKE_THROUGH);
-                mr |= modifier.STRIKE_THROUGH;
-                break;
-        }
-    }
-
-//  console.log('SEQ:',match[0].replace('\x1B','€'),'->',ansiStateShow({fg, bg, ms, mm, mr}));
-
-    ss={ fg, bg, ms, mm, mr };
-
-    if (ff) escSeqCacheFinal.set(seqPars,ss);
-    else    escSeqCache.set(seqPars,ss);
-    
-    return ss;
-}    
-
-export function escSeq2Settings(seq: string, ff: boolean = false): Settings {
-
-    const m = ansiSeqRegExp.exec(seq);
-
-    if (m) return escSeqPars2Settings(m[1] ?? '0',ff);
-    else   return ANSI_NO_SETTINGS;
-
-}
-
-export function settingsOverwrite(s1: Settings, s2: Settings): Settings {
-
-    let s: Settings = { ... s1 };
-
-    if (s2.fg) s.fg=s2.fg;
-    if (s2.bg) s.bg=s2.bg;
-
-    s.mm=s.mm | s2.mm;
-    s.ms=(s.ms & (~s2.mm)) | s2.ms;
-
-    return s;
-}    
-
-export function settingsUpdate(s1: Settings, s2: Settings): Settings {
-
-    let s: Settings = { ... s1 };
-
-    if (s2.fg && (!s.fg || s.fg==='39')) s.fg=s2.fg;
-    if (s2.bg && (!s.bg || s.bg==='49')) s.bg=s2.bg;
-
-    const mm = (s2.mm & (~s.mm | ~s.ms))
-
-    s.mm=s.mm | mm;
-    s.ms=(s.ms & ~mm) | (s2.ms & mm);
-
-    return s;
-}
-
-function settingsBG(ss: Settings) {
-
-    let s: Settings = { ms: ss.ms, mm: ss.mm, mr: ss.mr };
-
-    if (ss.fg) {
-        switch (ss.fg.charAt(0)) {
-            case '3':
-                s.bg='4'+ss.fg.slice(1);
-                break;
-            case '9':
-                s.bg='10'+ss.fg.slice(1);
-                break;
-        }
-    }
-
-    return ss;
-}
-
-export function stateUpdate(s: State, ss: Settings): State {
-
-    let sr: State = { ms: (s.ms & (~(ss.mm|ss.mr))) | ss.ms, mm: (s.mm | ss.mm) & (~ss.mr), mr: 0 };
-            
-    if (!ss.fg) {
-        if (s.fg) sr.fg=s.fg;
-    }
-    else if (ss.fg!=='39') {
-        sr.fg=ss.fg;
-    }
-
-    if (!ss.bg) {
-        if (s.bg) sr.bg=s.bg;
-    }
-    else if (ss.bg!=='49') {
-        sr.bg=ss.bg;
-    }
-
-    sr.mm=(s.mm | ss.mm) & (~ss.mr);
-    sr.ms=(s.ms & (~(ss.mm|ss.mr))) | ss.ms;
-
-    return sr;
-}    
-
-export function stateApply(s: State, ss: Settings): State {
-
-    const mm = (ss.mm & (~s.mm)) | ss.mr;
-    let sr: State = { ms: (s.ms & (~mm)) | ss.ms, mm: (s.mm & (~mm)) | ss.mm, mr: 0 };
-        
-    if (!s.fg) {
-        if (ss.fg && ss.fg!=='39') sr.fg=ss.fg;
-    }
-    else if (ss.fg!=='39') {
-        sr.fg=s.fg
-    }
-
-    if (!s.bg) {
-        if (ss.bg && ss.bg!=='49') sr.bg=ss.bg;
-    }
-    else if (ss.bg!=='49') {
-        sr.bg=s.bg
-    }
-
-    return sr;
-}
-
-function stateModifiersShow(m: number): string {
-
-    let r: string = '';
-
-    if (m&modifier.BOLD) r=r+'B';
-    if (m&modifier.DIM) r=r+'D';
-    if (m&modifier.ITALIC) r=r+'I';
-    if (m&modifier.UNDERLINE) r=r+'U';
-    if (m&modifier.BLINK) r=r+'K';
-    if (m&modifier.INVERSE) r=r+'V';
-    if (m&modifier.HIDDEN) r=r+'H';
-    if (m&modifier.STRIKE_THROUGH) r=r+'S';
-    if (m&modifier.FINAL) r=r+'F';
-    
-    return r;
-}
-
-function stateShow(s: State | Settings): string {
-
-    let r:  string = '{';
-    let rs: string = '';
-
-    if (s.fg) { r=r+rs+"fg:'"+s.fg+"'"; rs=',' }
-    if (s.bg) { r=r+rs+"bg:'"+s.bg+"'"; rs=',' }
-
-    if (s.ms) { r=r+rs+'ms:'+stateModifiersShow(s.ms); rs=',' };
-    if (s.mm) { r=r+rs+'mm:'+stateModifiersShow(s.mm); rs=',' };
-    if (s.mr) { r=r+rs+'mr:'+stateModifiersShow(s.mr); rs=',' };
-
-    return r+'}';
-}
-
-export function ansiSplit(s: string, as?: State): AnsiStringParts {
-
-    as = as ?? ANSI_NO_STATE;
-
-    if (s.indexOf('\x1B')<0) {
-        if (s) return [ as, s ];
-        else   return [];
-    }
-    else {
-        let ss: AnsiStringParts = []
-        let r: string = s;
-        const ff = (as.ms & modifier.FINAL)>0;
-        for (;;) {
-            const m = ansiSeqRegExp.exec(r);
-            if (!m) break;
-            if (m.index>0) ss.push(as,r.slice(0,m.index));
-            as=stateUpdate(as,escSeqPars2Settings(m[1] ?? '0',ff));
-            r=r.slice(m.index+m[0].length);
-        }
-        if (r) ss.push(as,r);
-        return ss;
-    }
-}
-
-function settingsName(ss: Settings)
-
-{  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
-   return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`
-}
-
-export function ansiMakeState(s: State, ss: State): string {
-
-    let sr: string = '';
-    let sx;
-
-    sx=(s.ms ^ ss.ms);
-    for (let sm=1;sm<=sx;sm<<=1) {
-        if (!(sx & sm)) continue;
-        switch (sm) {
-            case modifier.BOLD:
-            case modifier.DIM:
-                sr=sr+((ss.ms & modifier.DIM) ? '2;' :
-                       (ss.ms & modifier.BOLD) ? '1;' :
-                       '22;');
-                sx &= (~modifier.BOLD_DIM);
-                break;
-            case modifier.UNDERLINE:
-            case modifier.DOUBLE_UNDERLINE:
-                sr=sr+((ss.ms & modifier.DOUBLE_UNDERLINE) ? '21;' :
-                (ss.ms & modifier.UNDERLINE) ? '4;' :
-                '24;');
-                sx &= (~modifier.ANY_UNDERLINE);
-                break;
-            case modifier.ITALIC:
-                sr=sr+((ss.ms & modifier.ITALIC) ? '3;' : '23;');
-                break;
-            case modifier.INVERSE:
-                sr=sr+((ss.ms & modifier.INVERSE) ? '7;' : '27;');
-                break;
-            case modifier.HIDDEN:
-                sr=sr+((ss.ms & modifier.HIDDEN) ? '8;' : '28;');
-                break;
-            case modifier.STRIKE_THROUGH:
-                sr=sr+((ss.ms & modifier.STRIKE_THROUGH) ? '9;' : '29;');
-                break;
-            case modifier.BLINK:
-            case modifier.RAPID_BLINK:
-                sr=sr+((ss.ms & modifier.RAPID_BLINK) ? '6;' :
-                        (ss.ms & modifier.BLINK) ? '5;' :
-                        '25;');
-                sx &= (~modifier.ANY_BLINK);
-                break;
-        }
-    }
-
-    sx=(ss.ms & modifier.FINAL) ? 0 : (s.mm & ss.mr);
-    for (let sm=1;sm<=sx;sm<<=1) {
-        if (!(sx & sm)) continue;
-        switch (sm) {
-            case modifier.BOLD:
-            case modifier.DIM:
-                sr=sr+'202;'
-                sx &= (modifier.BOLD_DIM);
-                break;
-            case modifier.UNDERLINE:
-            case modifier.DOUBLE_UNDERLINE:
-                sr=sr+'204;'
-                sx &= (modifier.ANY_UNDERLINE);
-                break;
-            case modifier.BLINK:
-            case modifier.RAPID_BLINK:
-                sr=sr+'205;'
-                sx &= (modifier.ANY_BLINK);
-                break;
-            case modifier.ITALIC:
-                sr=sr+'203;';
-                break;
-            case modifier.INVERSE:
-                sr=sr+'207;'
-                break;
-            case modifier.HIDDEN:
-                sr=sr+'208;';
-                break;
-            case modifier.STRIKE_THROUGH:
-                sr=sr+'209;';
-                break;
-        }
-    }
-
-    if (ss.fg!==s.fg) {
-        if (ss.fg)
-            sr=sr+ss.fg+';'
-        else if (s.fg)
-            sr=sr+'39;'
-    }
-    if (ss.bg!==s.bg) {
-        if (ss.bg)
-            sr=sr+ss.bg+';'
-        else if (s.bg)
-            sr=sr+'49;'
-    }
-
-//  console.log('Make:',ansiStateShow(s),'->',ansiStateShow(ss),'->',sr);
-
-    if (sr && !ss.fg && !ss.bg && !(ss.mm & modifier.STANDARD)) return '\x1B[0m';
-
-    return sr ? '\x1B['+sr.slice(0,-1)+'m' : ''
-}
-
-export class AnsiStringList {
-
-    parts: AnsiStringParts;
-
-    constructor(s: string, as?: State)
-
-    {   this.parts=ansiSplit(s,as);
-    }
-
-    showParts(): string {
-
-        let lx: string = '['
-        let ls: string = ''
-
-        for (const p of this.parts) {
-            if (typeof p !== 'string') {
-                lx=lx+ls+stateShow(p);
-            }
-            else {
-                lx=lx+ls+"'"+p+"'";
-            }
-            ls=','
-        }
-
-        return lx+']';
-    }
-
-    toString() : string {
-
-//      console.log('toString',this.showParts());
-
-        let s  = ANSI_NO_STATE;
-        let ss = ANSI_NO_STATE;
-        let r  = '';
-
-        for (let x of this.parts) {
-            if (typeof x !== 'string')
-                ss=x;
-            else if (x.indexOf('\n')<0) {
-                r=r+ansiMakeState(s,ss)+x;
-                s=ss;
-            }
-            else if (x==='\n' || x==='\r\n') {
-                r=r+ansiMakeState(s,ANSI_NO_STATE)+x;
-                s=ANSI_NO_STATE;
-            }
-            else {
-                let m: RegExpExecArray | null;
-                for (;;) {
-                    m=/^([^\r\n]*)(\r?\n)(.*)$/ms.exec(x);
-                    if (!m) break;
-                    if (m[1]) { r=r+ansiMakeState(s,ss)+m[1]; s=ss; }
-                    r=r+ansiMakeState(s,ANSI_NO_STATE)+m[2];
-                    s=ANSI_NO_STATE
-                    x=m[3];
-                }
-                if (x) { r=r+ansiMakeState(s,ss)+x; s=ss; }
-            }
-        }
-
-        r=r+ansiMakeState(s,ANSI_NO_STATE);
-
-//      console.log('toString ->',r.replace(/\x1B(\[[0-9;]*m)/g,'\x1B[4;31m€$1\x1B[0m'));
-
-        return r;
-    }
-
-    applySettings(ss: Settings)  {
-
-        const p = this.parts;
-        const l = p.length;
-
-        for (let i=0;i<l;++i) {
-            if (typeof p[i] === 'string') continue;
-            p[i]=stateApply(p[i] as State,ss);
-        }
-    }
-
-    applyStringFunction(f: (s: string) => string)  {
-
-        const p = this.parts;
-        const l = p.length;
-
-        for (let i=0;i<l;++i) {
-            if (typeof p[i] === 'string') p[i]=f(p[i] as string);
-        }
-    }
-
-    add(f: string | undefined, b: string | undefined ) {
-
-        if (f && b) {
-            this.parts = [ ANSI_NO_STATE, f, ... this.parts, ANSI_NO_STATE, b ];
-        }
-        else if (f) {
-            this.parts = [ ANSI_NO_STATE, f, ... this.parts ];
-        }
-        else if (b) {
-            this.parts = [ ... this.parts, ANSI_NO_STATE, b ];
-        }
-    }
-
-    addFront(f: string | undefined) {
-
-        if (f) this.parts = [ ANSI_NO_STATE, f, ... this.parts ];
-    }
-    
-    addBack(b: string | undefined) {
-
-        if (b) this.parts.push(ANSI_NO_STATE,b);
-    }
-
-    addBackWithState(s: State, b: string | undefined) {
-
-        if (b) this.parts.push(s,b);
-    }
-
-    addFrontSeq(s: string, as?: State) {
-
-        if (!s) return;
-
-        if (s.indexOf('\x1B')>=0) {
-            let lx = ansiSplit(s,as);
-            this.parts=[...lx,...this.parts];
-        }
-        else
-            this.parts=[as ?? ANSI_NO_STATE, s, ...this.parts];
-    }
-
-    addBackSeq(s: string, as?: State) {
-
-        if (!s) return;
-
-        if (s.indexOf('\x1B')>=0) {
-            let lx = ansiSplit(s,as);
-            this.parts=[...this.parts, ...lx];
-        }
-        else
-            this.parts.push(as ?? ANSI_NO_STATE, s);
-    }
-
-    addBackList(l2: AnsiStringList) {
-
-        this.parts=[...this.parts,...l2.parts];
-
-    }
-}
-
-function applyStyle(sx: any, as: State, ss: Settings) {
-
-//  console.log("ApplyStyle('"+sx+"',"+ansiStateShow(as)+","+ansiStateShow(ss)+")");
-
-    let asl=new AnsiStringList(''+sx,as)
-//  console.log("ASI",asl.showParts());
-
-    asl.applySettings(ss);
-
-    return asl.toString();
-}
-
-export type ConsoleStyleFunction = (s: string | AnsiStringList, as?: State) => string | AnsiStringList;
+import * as Colors from './colors';
+import { Modifier, State, Settings,
+         ANSI_SGR_REGEXP,
+         ANSI_NO_STATE, ANSI_NO_STATE_FINAL,
+         ANSI_NO_SETTINGS,
+         sgrPars2Settings,
+         settingsOverwrite,
+         StateStringList,
+         } from './state';
+
+export type ConsoleStyleFunction = (s: string | StateStringList, cs: ConsoleStyler) => string | StateStringList;
 export type ConsoleStyleStringFunction = (s: string) => string;
-export type ConsoleStyleListFunction = (s: AnsiStringList) => AnsiStringList;
-type ConsoleStyleSettings = Settings | (Settings | ConsoleStyleFunction)[];
+export type ConsoleStyleListFunction = (s: StateStringList) => StateStringList;
 export type ConsoleStyleAliasFunction = ConsoleStyleFunction | ConsoleStyleStringFunction | ConsoleStyleListFunction;
 
-function applyStyleEx(sx: any, as: State, sss: (Settings | ConsoleStyleFunction)[]) {
-
-    let asl: string | AnsiStringList = ''+sx;
-
-    for (const ss of sss) {
-        if (typeof ss === 'function') {
-            asl=ss(asl,as);
-        }
-        else {
-            if (typeof asl === 'string') asl=new AnsiStringList(asl,as);
-            asl.applySettings(ss);
-        }
-    }
-
-    return asl.toString();
-}
+type ConsoleStyleSettingsList = (Settings | ConsoleStyleFunction)[];
+type ConsoleStyleSettings = Settings | ConsoleStyleSettingsList;
 
 interface ConsoleStyleData {
 
     styler: ConsoleStyler;
+    style:  (n: string, s?: ConsoleStyleSettings) => ConsoleStyle;
     set:    ConsoleStyleSettings;
     prop:   any;
 }
@@ -777,7 +34,7 @@ const consoleStyleHandler = {
         if (p=sd.prop[prop]) return p;
 //      if (prop==='_SETTINGS') return sd.set;
 
-        return sd.prop[prop]=sd.styler.byName(prop,sd.set);
+        return sd.prop[prop]=sd.style(prop,sd.set);
     },
 
     set: function(sd: ConsoleStyleData, prop: string, val: any) {
@@ -809,13 +66,15 @@ const consoleStylesHandler = {
 
 // export type ConsoleStyleFunction = (s: string | AnsiString) => typeof s;
 export type ConsoleStyles        = { [key: string] : ConsoleStyle };
-export type ConsoleStyle         = { [key: string] : ConsoleStyle, (s: string): string, (s: AnsiStringList): AnsiStringList };
+export type ConsoleStyle         = { [key: string] : ConsoleStyle, (s: string): string, (s: StateStringList): StateStringList };
 
 export type ControlName  = string | ((s: string) => string);
 
 export interface ConsoleStylerOptions {
 
-    notModifiers?: boolean,
+    level?:       number;
+
+    not?:         boolean,
     whiteIsDark?: boolean,
 
     alias?:     { [key: string]: ConsoleStyle | string },
@@ -830,32 +89,121 @@ const CONSOLE_STYLE_COLORS: [string, number][] = [
 
 ];
 
-const CONSOLE_STYLE_MODIFIER: [string, number][] = [
+const CONSOLE_STYLE_MODIFIER: [string, number, number][] = [
 
-    [ 'bold', modifier.BOLD ],
-    [ 'dim', modifier.DIM ],
-    [ 'italic', modifier.ITALIC ],
-    [ 'underline', modifier.UNDERLINE ],
-    [ 'ul', modifier.UNDERLINE ],
-    [ 'doubleUnderline', modifier.DOUBLE_UNDERLINE ],
-    [ 'dul', modifier.DOUBLE_UNDERLINE ],
-    [ 'blink', modifier.BLINK ],
-    [ 'inverse', modifier.INVERSE ],
-    [ 'hidden', modifier.HIDDEN ],
-    [ 'strikethrough', modifier.STRIKE_THROUGH ],
-    [ 'strike', modifier.STRIKE_THROUGH ],
+    [ 'bold', Modifier.BOLD, 0 ],
+    [ 'dim', Modifier.DIM, 0 ],
+    [ 'italic', Modifier.ITALIC, 0 ],
+    [ 'underline', Modifier.UNDERLINE, 0 ],
+    [ 'ul', Modifier.UNDERLINE, 0 ],
+    [ 'doubleUnderline', Modifier.DOUBLE_UNDERLINE, 0 ],
+    [ 'dblUl', Modifier.DOUBLE_UNDERLINE, 0 ],
+    [ 'blink', Modifier.BLINK, 0 ],
+    [ 'inverse', Modifier.INVERSE, 0 ],
+    [ 'hidden', Modifier.HIDDEN, 0 ],
+    [ 'strikethrough', Modifier.STRIKE_THROUGH, 0 ],
+    [ 'strike', Modifier.STRIKE_THROUGH, 0 ],
+    [ 'overline', Modifier.OVERLINE, 0 ],
 
-]    
+    [ 'not', Modifier.NOT_MODIFIER, 0 ],
+    [ 'bg',  Modifier.BACKGROUND, 0 ],
+    [ 'dark', Modifier.DARK, 0 ],
+    [ 'bright', Modifier.BRIGHT, 0 ],
 
-export const CONSOLE_STYLE_NAME_SPECIAL_CHARS = '-=:?!.,;#@()'
+    [ 'final', Modifier.FINAL, 0 ],
+    
+]
 
 export class ConsoleStyler {
 
     s: ConsoleStyles;
 
-    constructor(opts: ConsoleStylerOptions) {
+    level: number;
+    
+    black!: ConsoleStyle;
+    red!: ConsoleStyle;
+    green!: ConsoleStyle;
+    yellow!: ConsoleStyle;
+    blue!: ConsoleStyle;
+    magenta!: ConsoleStyle;
+    cyan!: ConsoleStyle;
+    grey!: ConsoleStyle;
+    gray!: ConsoleStyle;
+    white!: ConsoleStyle;
 
-        this._notModifiers=!!opts.notModifiers;
+    blackBright!: ConsoleStyle;
+    redBright!: ConsoleStyle;
+    greenBright!: ConsoleStyle;
+    yellowBright!: ConsoleStyle;
+    blueBright!: ConsoleStyle;
+    magentaBright!: ConsoleStyle;
+    cyanBright!: ConsoleStyle;
+    greyBright!: ConsoleStyle;
+    grayBright!: ConsoleStyle;
+    whiteBright!: ConsoleStyle;
+
+    bgBlack!: ConsoleStyle;
+    bgRed!: ConsoleStyle;
+    bgGreen!: ConsoleStyle;
+    bgYellow!: ConsoleStyle;
+    bgBlue!: ConsoleStyle;
+    bgMagenta!: ConsoleStyle;
+    bgCyan!: ConsoleStyle;
+    bgGrey!: ConsoleStyle;
+    bgGray!: ConsoleStyle;
+    bgWhite!: ConsoleStyle;
+
+    bgBlackBright!: ConsoleStyle;
+    bgRedBright!: ConsoleStyle;
+    bgGreenBright!: ConsoleStyle;
+    bgYellowBright!: ConsoleStyle;
+    bgBlueBright!: ConsoleStyle;
+    bgMagentaBright!: ConsoleStyle;
+    bgCyanBright!: ConsoleStyle;
+    bgGreyBright!: ConsoleStyle;
+    bgGrayBright!: ConsoleStyle;
+    bgWhiteBright!: ConsoleStyle;
+
+    bg!: ConsoleStyle;
+
+    bold!: ConsoleStyle;
+    dim!: ConsoleStyle;
+    italic!: ConsoleStyle;
+    underline!: ConsoleStyle;
+    ul!: ConsoleStyle;
+    doubleUnderline!: ConsoleStyle;
+    dblUl!: ConsoleStyle;
+    blink!: ConsoleStyle;
+    inverse!: ConsoleStyle;
+    hidden!: ConsoleStyle;
+    strikethrough!: ConsoleStyle;
+    strike!: ConsoleStyle;
+    overline!: ConsoleStyle;
+    not!: ConsoleStyle;
+
+    reset!: ConsoleStyle;
+
+    none!: ConsoleStyle;
+
+    visible!: ConsoleStyle;
+
+    sgr!: ConsoleStyle;
+    ctrl!: ConsoleStyle;
+
+    lower!: ConsoleStyle;
+    upper!: ConsoleStyle;
+
+    /* protected */ _initialState: State;
+
+    constructor(opts?: ConsoleStylerOptions) {
+
+        opts=opts ?? {};
+
+        this.level=opts.level ?? Colors.LEVEL_16M;
+
+        this.byName=this.byName.bind(this);
+
+        this._notModifiers=!!opts.not;
         this._initialState=this._notModifiers ? ANSI_NO_STATE : ANSI_NO_STATE_FINAL;
 
         let sd: any = { styler: this, styles: {} }
@@ -865,8 +213,10 @@ export class ConsoleStyler {
         this._sd=sd as ConsoleStylesData;
 
         this._byNameCache = new Map<string, ConsoleStyleSettings>();
+        this._styleCache = new Map<string, ConsoleStyle>();
 
-        sd.styles['none']=sd.styles[settingsName(ANSI_NO_SETTINGS)]=sd._emptyStyle;
+        (this as any)['none']=sd.styles['none']=sd._emptyStyle;
+        this._styleCache.set(this._settingsName(ANSI_NO_SETTINGS),sd._emptyStyle);
 
         for (const [ n, c ] of CONSOLE_STYLE_COLORS)
             this._ctorColor(n,c);
@@ -882,17 +232,16 @@ export class ConsoleStyler {
             this._ctorColor('grey',37);
         }
 
-        for (const [ n, m ] of CONSOLE_STYLE_MODIFIER) {
-            this._ctorModifier(n,m);
+        for (const [ n, ms, mm ] of CONSOLE_STYLE_MODIFIER) {
+            this._ctorStyle(n,{ ms: ms, mm: (mm || ms), mr: 0 });
         }
 
-        this._ctorStyle('reset',{ ms: 0, mm: 0, mr: modifier.STANDARD});
-        this._ctorStyle('final',{ ms: modifier.FINAL, mm: modifier.FINAL, mr: 0});
-
-        this.alias('upper',(x: string) => x.toUpperCase(),'SS');
-        this.alias('lower',(x: string) => x.toLowerCase(),'SS');
-        this.alias('sgr',this._sgrFunc.bind(this),'X');
-        this.alias('ctrl',this._ctrlFunc.bind(this),'X');
+        this._ctorFunctionStyle('reset',this._resetFunc.bind(this),'X');
+        this._ctorFunctionStyle('visible',this._visibleFunc.bind(this),'X');
+        this._ctorFunctionStyle('upper',(x: string) => x.toUpperCase(),'SS');
+        this._ctorFunctionStyle('lower',(x: string) => x.toLowerCase(),'SS');
+        this._ctorFunctionStyle('sgr',this._sgrFunc.bind(this),'X');
+        this._ctorFunctionStyle('ctrl',this._ctrlFunc.bind(this),'X');
 
         this._ctrlStyle={};
         this._ctrlName={ '\n': '\\n', '\r': '\\r',  '?': this._ctrlNameStd };
@@ -907,7 +256,14 @@ export class ConsoleStyler {
 
     f(s: string, final: boolean = true): string {
 
-        const as = final ? ANSI_NO_STATE_FINAL : ANSI_NO_STATE;
+        if (this._notModifiers && final) {
+            const is = this._initialState;
+            this._initialState=ANSI_NO_STATE_FINAL;
+            const r = this.f(s,false);
+            this._initialState=is;
+            return r;
+        }
+
         let   stk: any[] = ['']
         let   i: number = 0
 
@@ -924,14 +280,14 @@ export class ConsoleStyler {
             }
             else if (i>0) {
                 i-=2;
-                stk[i]=this._fAppend(stk[i],this._fApply(stk[i+2],stk[i+1],as),as);
+                stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
             }
             s=s.slice(m.index+m[0].length)
         }
 
         while (i>0) {
             i-=2;
-            stk[i]=this._fAppend(stk[i],this._fApply(stk[i+2],stk[i+1]),as);
+            stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
         }
 
         return stk[0].toString();
@@ -941,10 +297,10 @@ export class ConsoleStyler {
 
         if (Array.isArray(fx)) {
             const fx2 = fx[2] ?? '|'
-            const sc = CONSOLE_STYLE_NAME_SPECIAL_CHARS.replace(fx2,'');
+            const fxx = fx[1].split('').reduce((r,x) => r.indexOf(x)<0 ? r+x : r,fx2)
             const rx = '(?:(?:' +
                        this._escapeRegExp(fx[0]) +
-                       '([' + sc + 'a-zA-Z0-9_]*)' + 
+                       '([^'+fxx+']+)' + 
                        this._escapeRegExp(fx2) +
                        ')|(?:' +
                        this._escapeRegExp(fx[1]) +
@@ -1038,15 +394,23 @@ export class ConsoleStyler {
     protected _sd: ConsoleStylesData;
 
     protected _notModifiers: boolean;
-    protected _initialState: State;
 
-    // @ts-expect-error
-    protected _fmtRex: RegExp
+    protected _styleCache: Map<string, ConsoleStyle>;
+
+    protected _fmtRex!: RegExp
 
     protected _ctorStyle(n: string, ss: Settings): void {
 
         const cs = this._createStyle(ss);
-        this._sd.styles[n]=this._sd.styles[settingsName(ss)]=cs;
+        (this as any)[n]=this._sd.styles[n]=cs;
+        this._styleCache.set(this._settingsName(ss),cs);
+    }
+
+    protected _ctorFunctionStyle(n: string, f: ConsoleStyleAliasFunction, fType: string = 'S'): void {
+
+        const s: ConsoleStyle = this._styleFromFunction(f,fType);
+
+        (this as any)[n]=this._sd.styles[n]=s;
     }
 
     protected _ctorColor(n: string, c: number): void {
@@ -1060,35 +424,20 @@ export class ConsoleStyler {
         }
     }        
 
-    protected _ctorModifier(n: string, m: number): void {
-
-        this._ctorStyle(n, { ms: m, mm: m, mr: 0});
-        if (this._notModifiers) {
-            this._ctorStyle('!'+n, { ms: 0, mm: m, mr: 0});
-            this._ctorStyle(this._notName(n), { ms: 0, mm: m, mr: 0});
-        }
-    }
-
     protected _bgName(n: string): string {
 
         return 'bg'+n.charAt(0).toUpperCase()+n.slice(1);
     }
 
-    protected _notName(n: string): string {
-
-        return 'not'+n.charAt(0).toUpperCase()+n.slice(1);
-    }
-
     protected _createStyle(ss: ConsoleStyleSettings): ConsoleStyle {
 
-        const as = this._initialState;
-        const sd: ConsoleStyleData =
-                    (Array.isArray(ss) ?
-                        (function(sx: any) { return applyStyleEx(sx,as,ss); })
+        const sd: ConsoleStyleData = (Array.isArray(ss) ?
+                        this._applyList.bind(this,ss)
                         :
-                        (function(sx: any) { return applyStyle(sx,as,ss); })) as unknown as ConsoleStyleData;
+                        this._apply.bind(this,ss)) as unknown as ConsoleStyleData;
 
         sd.styler=this;
+        sd.style=this.byName;
         sd.set=ss;
         sd.prop={ '_SETTINGS': ss };
 
@@ -1104,13 +453,13 @@ export class ConsoleStyler {
                 fx=f as ConsoleStyleFunction;
                 break;
             case 'L':
-                fx=function(sx: string | AnsiStringList, as?: State) {
-                    if (typeof sx === 'string') sx=new AnsiStringList(sx,as);
+                fx=function(sx: string | StateStringList, cs: ConsoleStyler) {
+                    if (typeof sx === 'string') sx=new StateStringList(sx,cs);
                     return (f as ConsoleStyleListFunction)(sx);
                 };
                 break;
             case 'SS':
-                fx=function(sx: string | AnsiStringList, as?: State) {
+                fx=function(sx: string | StateStringList, cs: ConsoleStyler) {
                     if (typeof sx === 'string') {
                         return (f as ConsoleStyleStringFunction)(sx);
                     }
@@ -1121,7 +470,7 @@ export class ConsoleStyler {
                 };
                 break;
             default:
-                fx=function(sx: string | AnsiStringList, as?: State) {
+                fx=function(sx: string | StateStringList, cs: ConsoleStyler) {
                     return ((f as ConsoleStyleStringFunction)(sx.toString()));
                 };
         }
@@ -1140,10 +489,10 @@ export class ConsoleStyler {
             return this._createStyle(ss);
         }
         else {
-            const n = settingsName(ss);
-            let s: ConsoleStyle = this._sd.styles[n];
+            const n = this._settingsName(ss);
+            let s: ConsoleStyle | undefined = this._styleCache.get(n);
 
-            if (!s) this._sd.styles[n]=s=this._createStyle(ss);
+            if (!s) this._styleCache.set(n,s=this._createStyle(ss));
 
             return s;  }
     }
@@ -1154,7 +503,6 @@ export class ConsoleStyler {
 
         let s:  ConsoleStyle;
         let sx: ConsoleStyleSettings;
-        let bg: boolean
         let ss: ConsoleStyleSettings | undefined;
         
         if (ss=this._byNameCache.get(nn)) return ss;
@@ -1162,28 +510,16 @@ export class ConsoleStyler {
         ss=ANSI_NO_SETTINGS;
 
         for (let n of nn.split(/[.+ ] */)) {
-            if (n.startsWith('bg=') || n.startsWith('bg:')) {
-                    bg=true
-                n=n.slice(3)
-            }
-            else if (n.startsWith('fg=') || n.startsWith('fg:')) {
-                bg=false
-                n=n.slice(3)
-            }
-            else
-                bg=false
-
-            s=this._sd.styles[n];
-            if (s) {
+            if (s=this._sd.styles[n])
                 sx=this._styleSettings(s);
-                if (bg) sx=this._settingsBG(ss);
-            }
             else if (n.charAt(0)==='#')
-                sx=this._ansiHexSettings(n,bg);
+                sx=this._ansiHexSettings(n);
             else if (n.charAt(0)==='@')
-                sx=this._ansiC256Settings(n,bg);
-            else if (n.replace(/[0-9]+/g,'')==='')
-                sx=this._ansiC16Settings(n,bg);
+                sx=this._c256Settings(n);
+            else if (n.charAt(0)==='%')
+                sx=this._c16Settings(n);
+            else if (/[0-9;]+/.test(n))
+                sx=sgrPars2Settings(n,!this._notModifiers);
             else
                 throw Error(`unknown console style '${n}'`)
 
@@ -1195,45 +531,46 @@ export class ConsoleStyler {
         return ss;
     }
 
-    protected _settingsOverwrite(ss: ConsoleStyleSettings, sx: ConsoleStyleSettings)
+    protected _settingsOverwrite(ss: ConsoleStyleSettings, sx: ConsoleStyleSettings) : ConsoleStyleSettings {
 
-    {   if (Array.isArray(ss))
-            return ss.concat(sx);
+        if (Array.isArray(ss)) {
+            const i = ss.length-1;
+            if (typeof ss[i] === 'object' && typeof sx === 'object') {
+                ss[i]=settingsOverwrite(ss[i] as Settings,sx as Settings);
+                return ss;
+            }
+            else
+                return ss.concat(sx);
+        }
         else if (Array.isArray(sx))
             return [ss,...sx]
         else
             return settingsOverwrite(ss,sx);
     }
 
-    protected _settingsBG(ss: ConsoleStyleSettings): ConsoleStyleSettings {
-
-        if (Array.isArray(ss))
-            return ss.map(x => (typeof x !== 'function') ? settingsBG(x) : x);
-        else
-            return settingsBG(ss);
-    }
-
-    protected _ansiC256Settings(n: string, bg: boolean = false): Settings {
+    protected _c256Settings(n: string): Settings {
 
         if (n.charAt(0)==='@') n=n.slice(1)
         const c = Number(n.slice(1));
 
         if (c<0 || c>255) throw Error(`invalid console style '@${n}'`)
-        if (bg) return { bg:'48;5;'+c, ms: 0, mm: 0, mr:0}
-        else    return { fg:'38;5;'+c, ms: 0, mm: 0, mr:0}
+
+        return this._colorSettings(Colors.sgrFromC256(c))
     }
 
-    protected _ansiC16Settings(n: string, bg: boolean = false): Settings {
+    protected _c16Settings(n: string): Settings {
+
+        let bg: boolean = false;
 
         if (n.charAt(0)==='%') n=n.slice(1)
         let c = Number(n);
 
         if (c<30)       c=0;
-        else if (c<38)  c=bg ? c+10 : c;
+        else if (c<38)  c=c;
         else if (c<40)  c=0;
         else if (c<48)  bg=true;
         else if (c<90)  c=0;
-        else if (c<98)  c=bg ? c+10 : c;
+        else if (c<98)  c=c;
         else if (c<100) c=0;
         else if (c<108) bg=true;
         else            c=0;
@@ -1244,33 +581,28 @@ export class ConsoleStyler {
         else    return { fg:''+c, ms: 0, mm: 0, mr:0}
     }
 
-    protected _ansiHexSettings(hx: string, bg: boolean = false): Settings {
+    protected _ansiHexSettings(hx: string): Settings {
 
-        let r: number;
-        let g: number;        
-        let b: number;        
+        let fg,bg: string | undefined;
+        let s: number;
 
-        hx=hx.replace(/[#\,]/g,'')
-        if (hx.length===3) {
-            r=parseInt(hx.slice(0,1),16); r=r*16+r;
-            g=parseInt(hx.slice(1,2),16); g=g*16+g;
-            b=parseInt(hx.slice(2,3),16); b=b*16+b;
-        }
-        else if (hx.length===6) {
-            r=parseInt(hx.slice(0,2),16);
-            g=parseInt(hx.slice(2,4),16);
-            b=parseInt(hx.slice(4,6),16);
+        if ((s=hx.indexOf(':'))>=0) {
+            if (s>0) fg=Colors.sgrFromHex(hx.slice(0,s));
+            if (s+1<hx.length) bg=Colors.sgrFromHex(hx.slice(s+1));
         }
         else
-            throw Error(`invalid hex color '${hx}'`)
+            fg=Colors.sgrFromHex(hx);
 
-        return this._ansiRgbSettings(r,g,b,bg)
+        return this._colorSettings(fg,bg);
     }
 
-    protected _ansiRgbSettings(r: number, g: number, b: number, bg: boolean = false): Settings {
+    protected _colorSettings(fg?: string, bg?: string): Settings {
 
-        if (bg) return { bg: `48;2;${r};${g};${b}`, ms: 0, mm: 0, mr: 0 };
-        else    return { fg: `38;2;${r};${g};${b}`, ms: 0, mm: 0, mr: 0 };
+        let ss: Settings = { ms: 0, mm: 0, mr: 0 };
+        if (fg) ss.fg=fg;
+        if (bg) ss.bg=bg;
+
+        return ss;
     }
 
     protected _escapeRegExp(str: string): string {
@@ -1278,18 +610,18 @@ export class ConsoleStyler {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     }
 
-    protected _fAppend(s1: string | AnsiStringList, s2: string | AnsiStringList, as?: State) {
+    protected _fAppend(s1: string | StateStringList, s2: string | StateStringList) {
 
         if (!s1) return s2;
         if (!s2) return s1;
 
         if (typeof s1 === 'string') {
             if (typeof s2 === 'string') return s1+s2;
-            s2.addFrontSeq(s1,as);
+            s2.addFrontSeq(s1,this._initialState);
             return s2;
         }
         else if (typeof s2 === 'string') {
-            s1.addBackSeq(s2,as);
+            s1.addBackSeq(s2,this._initialState);
             return s1;
         }
         else {
@@ -1298,31 +630,70 @@ export class ConsoleStyler {
         }
     }
 
-    protected _fApply(sx: string | AnsiStringList, ss: ConsoleStyleSettings, as?: State) {
+    protected _fApplyEx(ss: ConsoleStyleSettings, sx: string | StateStringList) {
 
         if (Array.isArray(ss)) {
             for (const sss of ss) {
                 if (typeof sss === 'function')
-                    sx=sss(sx,as);
+                    sx=sss(sx,this);
                 else {
-                    if (typeof sx === 'string') sx=new AnsiStringList(sx,as);
+                    if (typeof sx === 'string') sx=new StateStringList(sx,this);
                     sx.applySettings(sss);
                 }
             }
         }
         else {
-            if (typeof sx === 'string') sx=new AnsiStringList(sx,as);
+            if (typeof sx === 'string') sx=new StateStringList(sx,this);
             sx.applySettings(ss);
         }
 
         return sx;
     }
 
+    protected _applyList(ss: ConsoleStyleSettingsList, sx: string | StateStringList) {
+
+        for (const sss of ss) {
+            if (typeof sss === 'function')
+                sx=sss(sx,this);
+            else {
+                if (typeof sx === 'string') sx=new StateStringList(sx,this);
+                sx.applySettings(sss); }
+            }
+
+        return sx.toString();
+    }
+
+    protected _apply(ss: Settings, sx: string | StateStringList) {
+
+        if (typeof sx === 'string') sx=new StateStringList(sx,this);
+        sx.applySettings(ss);
+
+        return sx.toString();
+    }
+
+    protected _resetFunc(s: string | StateStringList, cs: ConsoleStyler): string | StateStringList {
+
+        if (typeof s === 'string') {
+            s=s.replace(ANSI_SGR_REGEXP,'');
+        }
+        else {
+            s.reset();
+        }
+
+        return s;
+    }
+
+    protected _visibleFunc(s: string | StateStringList, cs: ConsoleStyler): string | StateStringList {
+
+        if (cs.level>0) return s;
+        else            return '';
+    }
+
     protected _ctrlStyle:       { [key: string]: ConsoleStyle };
     protected _ctrlName:        { [key: string]: string | ((c: string) => string) };
     protected _ctrlNameCache:   { [key: string]: string };
 
-    protected _sgrFunc(s: string | AnsiStringList, as?: State): string {
+    protected _sgrFunc(s: string | StateStringList, cs: ConsoleStyler): string {
 
         s=s.toString();
         
@@ -1417,7 +788,7 @@ export class ConsoleStyler {
         return cnx;
     }
 
-    protected _ctrlFunc(s: string | AnsiStringList, as?: State): string {
+    protected _ctrlFunc(s: string | StateStringList, cs: ConsoleStyler): string {
 
         let m: RegExpExecArray | null;
         let cn: string | undefined;
@@ -1454,4 +825,11 @@ export class ConsoleStyler {
 
         return r+s;
     }
+
+    protected _settingsName(ss: Settings)
+
+    {  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
+       return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`
+    }
+    
 }
