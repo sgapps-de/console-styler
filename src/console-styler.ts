@@ -65,7 +65,14 @@ const ANSI_SEQ_REGEX = '\x1B\\[([?0-9]+(?:;[0-9]+)*)?m'
 
 export const ansiSeqRegExp = new RegExp(ANSI_SEQ_REGEX.replace(/\s+/g,''),'i')
 
-export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false): Settings {
+const escSeqCache      = new Map<string,Settings>();
+const escSeqCacheFinal = new Map<string,Settings>();
+
+// export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false): Settings {
+export function escSeqPars2Settings(seqPars: string, ff: boolean = false): Settings {
+
+    let ss = ff ? escSeqCacheFinal.get(seqPars) : escSeqCache.get(seqPars);
+    if (ss) return ss;
 
     let ms: number = 0;
     let mm: number = 0;
@@ -73,7 +80,9 @@ export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false
     let fg: string | undefined;
     let bg: string | undefined;
 
-    const cc = (match[1] ?? '0').split(';').map(x => Number(x))
+//  const cc = (match[1] ?? '0').split(';').map(x => Number(x))
+    const cc = seqPars.split(';').map(x => Number(x))
+
     let i,c: number;
     for (i=0;i<cc.length;++i) {
         switch (c=cc[i]) {
@@ -300,15 +309,20 @@ export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false
 
 //  console.log('SEQ:',match[0].replace('\x1B','€'),'->',ansiStateShow({fg, bg, ms, mm, mr}));
 
-    return { fg, bg, ms, mm, mr };
+    ss={ fg, bg, ms, mm, mr };
+
+    if (ff) escSeqCacheFinal.set(seqPars,ss);
+    else    escSeqCache.set(seqPars,ss);
+    
+    return ss;
 }    
 
 export function escSeq2Settings(seq: string, ff: boolean = false): Settings {
 
     const m = ansiSeqRegExp.exec(seq);
 
-    if (m) return escSeqMatch2Settings(m,ff);
-    else   return { ms: 0, mm: 0, mr: 0};
+    if (m) return escSeqPars2Settings(m[1] ?? '0',ff);
+    else   return ANSI_NO_SETTINGS;
 
 }
 
@@ -452,7 +466,7 @@ export function ansiSplit(s: string, as?: State): AnsiStringParts {
             const m = ansiSeqRegExp.exec(r);
             if (!m) break;
             if (m.index>0) ss.push(as,r.slice(0,m.index));
-            as=stateUpdate(as,escSeqMatch2Settings(m,ff));
+            as=stateUpdate(as,escSeqPars2Settings(m[1] ?? '0',ff));
             r=r.slice(m.index+m[0].length);
         }
         if (r) ss.push(as,r);
@@ -751,15 +765,19 @@ interface ConsoleStyleData {
 
     styler: ConsoleStyler;
     set:    ConsoleStyleSettings;
+    prop:   any;
 }
 
 const consoleStyleHandler = {
 
     get: function(sd: ConsoleStyleData, prop: string, recv: any) {
 
-        if (prop==='_SETTINGS') return sd.set;
+        let p: any;
 
-        return sd.styler.byName(prop,sd.set);
+        if (p=sd.prop[prop]) return p;
+//      if (prop==='_SETTINGS') return sd.set;
+
+        return sd.prop[prop]=sd.styler.byName(prop,sd.set);
     },
 
     set: function(sd: ConsoleStyleData, prop: string, val: any) {
@@ -793,11 +811,16 @@ const consoleStylesHandler = {
 export type ConsoleStyles        = { [key: string] : ConsoleStyle };
 export type ConsoleStyle         = { [key: string] : ConsoleStyle, (s: string): string, (s: AnsiStringList): AnsiStringList };
 
+export type ControlName  = string | ((s: string) => string);
+
 export interface ConsoleStylerOptions {
 
     notModifiers?: boolean,
     whiteIsDark?: boolean,
 
+    alias?:     { [key: string]: ConsoleStyle | string },
+    ctrlStyle?: { [key: string]: ConsoleStyle | string },
+    ctrlName?:  { [key: string]: ControlName },
 }
 
 const CONSOLE_STYLE_COLORS: [string, number][] = [
@@ -824,7 +847,7 @@ const CONSOLE_STYLE_MODIFIER: [string, number][] = [
 
 ]    
 
-export const CONSOLE_STYLE_NAME_SPECIAL_CHARS = '-=:!.,#@()'
+export const CONSOLE_STYLE_NAME_SPECIAL_CHARS = '-=:?!.,;#@()'
 
 export class ConsoleStyler {
 
@@ -840,6 +863,8 @@ export class ConsoleStyler {
         this.s=new Proxy<ConsoleStylesData>(sd,consoleStylesHandler) as unknown as ConsoleStyles;
         sd._emptyStyle=this._createStyle(ANSI_NO_SETTINGS);
         this._sd=sd as ConsoleStylesData;
+
+        this._byNameCache = new Map<string, ConsoleStyleSettings>();
 
         sd.styles['none']=sd.styles[settingsName(ANSI_NO_SETTINGS)]=sd._emptyStyle;
 
@@ -866,9 +891,18 @@ export class ConsoleStyler {
 
         this.alias('upper',(x: string) => x.toUpperCase(),'SS');
         this.alias('lower',(x: string) => x.toLowerCase(),'SS');
-        this.alias('sgr',this._sgrFunc.bind(this,'?'),'X');
+        this.alias('sgr',this._sgrFunc.bind(this),'X');
+        this.alias('ctrl',this._ctrlFunc.bind(this),'X');
 
-        this.setFormat(['{{','}}','|'])
+        this._ctrlStyle={};
+        this._ctrlName={ '\n': '\\n', '\r': '\\r',  '?': this._ctrlNameStd };
+        this._ctrlNameCache={};
+
+        this.setFormat(['{{','}}','|']);
+
+        if (opts.alias) this.alias(opts.alias);
+        if (opts.ctrlStyle) this.ctrlStyle(opts.ctrlStyle);
+        if (opts.ctrlName) this.ctrlName(opts.ctrlName);
     }
 
     f(s: string, final: boolean = true): string {
@@ -932,42 +966,71 @@ export class ConsoleStyler {
             return this._settingsStyle(ss);
         }
 
-        ss=this._byName(nn,ss);
+        if (ss)
+            ss=this._settingsOverwrite(ss,this._byName(nn))
+        else
+            ss=this._byName(nn);
+
         return this._settingsStyle(ss);
     }
 
-    alias(n: string, s: ConsoleStyle | string | ConsoleStyleAliasFunction, fType: string = 'S'): void {
+    alias(n: string | { [key: string]: ConsoleStyle | string }, s?: ConsoleStyle | string | ConsoleStyleAliasFunction, fType: string = 'S'): void {
+
+        if (typeof n !== 'string') {
+            for (const sn in n) this.alias(sn,n[sn]);
+            return;
+        }
 
         if (typeof s === 'string')
             s=this.byName(s);
         else if (typeof s === 'function')
             s=this._styleFromFunction(s,fType);
 
-        this._sd.styles[n]=s as ConsoleStyle;
+        if (s)
+            this._sd.styles[n]=s as ConsoleStyle;
+        else
+            delete this._sd.styles[n];
     }
 
-    showEscape(s: string, sx?: ConsoleStyle | string): string {
+    ctrlStyle(n: string | { [key: string]: ConsoleStyle | string }, s?: ConsoleStyle | string | ConsoleStyleAliasFunction, fType: string = 'S'): void {
 
-        let ss: ConsoleStyleSettings;
-
-        s=s.replace(/\x1B/g,'␛');
-
-        if (sx==='?') sx=undefined;
-
-        if (sx) {
-            let r = s;
-            let m: RegExpExecArray | null;
-            if (typeof sx === 'string') sx=this.byName(sx);
-            for (s='';;) {
-                m=/^(.*?)(␛\[[0-9;]*m)(.*)$/ms.exec(r);
-                if (!m) break;
-                s+=m[1]+sx(m[2]);
-                r=m[3];
-            }
-            s+=r;
+        if (typeof n !== 'string') {
+            for (const sn in n) this.ctrlStyle(sn,n[sn]);
+            return;
         }
-        
-        return s;
+
+        if (typeof s === 'string')
+            s=this.byName(s);
+        else if (typeof s === 'function')
+            s=this._styleFromFunction(s,fType);
+
+        if (s && s!==this._sd._emptyStyle)
+            this._ctrlStyle[n]=s as ConsoleStyle;
+        else
+            delete this._ctrlStyle[n];
+
+        if (n==='?')
+            this._ctrlNameCache={}
+        else 
+            delete this._ctrlNameCache[n];
+    }
+
+    ctrlName(n: string | { [key: string]: ControlName }, cn?: ControlName): void {
+
+        if (typeof n !== 'string') {
+            for (const sn in n) this.ctrlName(sn,n[sn]);
+            return;
+        }
+    
+        if (cn)
+            this._ctrlName[n]=cn;
+        else
+            delete this._ctrlName[n];
+
+        if (n==='?')
+            this._ctrlNameCache={}
+        else 
+            delete this._ctrlNameCache[n];
     }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1027,6 +1090,7 @@ export class ConsoleStyler {
 
         sd.styler=this;
         sd.set=ss;
+        sd.prop={ '_SETTINGS': ss };
 
         return new Proxy<ConsoleStyleData>(sd,consoleStyleHandler) as unknown as ConsoleStyle;
     }
@@ -1084,13 +1148,19 @@ export class ConsoleStyler {
             return s;  }
     }
 
-    protected _byName(nn: string, ss?: ConsoleStyleSettings): ConsoleStyleSettings {
+    protected _byNameCache: Map<string, ConsoleStyleSettings>;
+
+    protected _byName(nn: string): ConsoleStyleSettings {
 
         let s:  ConsoleStyle;
         let sx: ConsoleStyleSettings;
         let bg: boolean
+        let ss: ConsoleStyleSettings | undefined;
+        
+        if (ss=this._byNameCache.get(nn)) return ss;
 
-        ss=ss ?? ANSI_NO_SETTINGS;
+        ss=ANSI_NO_SETTINGS;
+
         for (let n of nn.split(/[.+ ] */)) {
             if (n.startsWith('bg=') || n.startsWith('bg:')) {
                     bg=true
@@ -1113,12 +1183,14 @@ export class ConsoleStyler {
             else if (n.charAt(0)==='@')
                 sx=this._ansiC256Settings(n,bg);
             else if (n.replace(/[0-9]+/g,'')==='')
-                sx=this._ansiC256Settings(n,bg);
+                sx=this._ansiC16Settings(n,bg);
             else
                 throw Error(`unknown console style '${n}'`)
 
             ss=this._settingsOverwrite(ss,sx);
         }
+
+        this._byNameCache.set(nn,ss);
 
         return ss;
     }
@@ -1246,9 +1318,140 @@ export class ConsoleStyler {
         return sx;
     }
 
-    protected _sgrFunc(sx: string | ConsoleStyle, s: string | AnsiStringList, as?: State): string {
+    protected _ctrlStyle:       { [key: string]: ConsoleStyle };
+    protected _ctrlName:        { [key: string]: string | ((c: string) => string) };
+    protected _ctrlNameCache:   { [key: string]: string };
 
-        return this.showEscape(s.toString(),sx);
+    protected _sgrFunc(s: string | AnsiStringList, as?: State): string {
 
+        s=s.toString();
+        
+        s=s.replace(/\x1B/g,'␛');
+        
+        let sx: ConsoleStyle | undefined;
+
+        if (sx = this._ctrlStyle.sgr) {
+            let r = s;
+            let m: RegExpExecArray | null;
+            for (s='';;) {
+                m=/^(.*?)(␛\[[0-9;]*m)(.*)$/ms.exec(r);
+                if (!m) break;
+                s+=m[1]+sx(m[2]);
+                r=m[3];
+            }
+            s+=r;
+        }
+        else if (sx = this._ctrlStyle['\x1B'] ?? this._ctrlStyle['?']) {
+            let r = s;
+            let m: RegExpExecArray | null;
+            for (s='';;) {
+                m=/^(.*?)␛(.*)$/ms.exec(r);
+                if (!m) break;
+                s+=m[1]+sx('␛');
+                r=m[2];
+            }
+            s+=r;
+        }
+
+        const esc=this._ctrlUnstyledName('\x1B');
+        if (esc!=='␛') s=s.replace('␛',esc);
+            
+        return s;
+    }
+
+    protected _ctrlNameStd(cs: string): string {
+
+        const c = cs.charCodeAt(0);
+        const h = c.toString(16).toUpperCase();
+
+        if (c<16)
+            return '\\x0'+h;
+        else if (c<256)
+            return '\\x'+h;
+        else if (c<4096)
+            return '\\u0'+h;
+        else
+            return '\\u'+h;
+    }
+
+    protected _ctrlUnstyledName(cs: string): string {
+
+        let cnx: string | ((c: string) => string) =
+            this._ctrlName[cs] ?? this._ctrlName['?'] ?? this._ctrlNameStd;
+
+        return (typeof cnx === 'function') ? cnx(cs) : cnx;
+    }
+
+    protected _ctrlStyledName(cs: string): string {
+
+        let cn: string | undefined = this._ctrlNameCache[cs];
+        let cnx: string | ((c: string) => string)  | undefined;
+        let css: ConsoleStyle | undefined;
+
+        if (cn) return cn;
+
+        cnx=this._ctrlName[cs];
+
+        if (!cnx) {
+            if (cs.length>1) {
+                if (css=this._ctrlStyle[cs]) {
+                    cn=cs.split('').map(s => this._ctrlUnstyledName(s)).join('');
+                    cnx=css(cn);
+                }
+                else {
+                    cnx=cs.split('').map(s => this._ctrlStyledName(s)).join('');
+                }
+                this._ctrlNameCache[cs]=cnx;
+                return cnx;
+            }
+            cnx=this._ctrlName['?'] ?? this._ctrlNameStd;
+        }
+
+        if (typeof cnx === 'function') cnx=cnx(cs);
+
+        css=this._ctrlStyle[cs] ?? this._ctrlStyle['?'];
+        if (css) cnx=css(cnx);
+
+        this._ctrlNameCache[cs]=cnx;
+
+        return cnx;
+    }
+
+    protected _ctrlFunc(s: string | AnsiStringList, as?: State): string {
+
+        let m: RegExpExecArray | null;
+        let cn: string | undefined;
+        let esc: string | undefined;
+
+        const css = this._ctrlStyle;
+    
+        const rx = (css['\r\n']) ?
+                    ((css['sgr']) ? /^([^\x00-\x1F\x7F]*)((?:\x1B\[[0-9;]*m)|(?:\r\n)|[\x00-\x1F\x7F])(.*)$/ms :
+                                    /^([^\x00-\x1F\x7F]*)((?:\r\n)|[\x00-\x1F\x7F])(.*)$/ms)
+                    :
+                    ((css['sgr']) ? /^([^\x00-\x1F\x7F]*)((?:\x1B\[[0-9;]*m)|[\x00-\x1F\x7F])(.*)$/ms :
+                                    /^([^\x00-\x1F\x7F]*)([\x00-\x1F\x7F])(.*)$/ms);
+    
+        // console.log("----",util.inspect(s),"----");
+        // console.log(rx.source);
+
+        s=s.toString();
+
+        let r = '';
+        for (;;) {
+            m=rx.exec(s);
+            if (!m) break;
+            if (m[2].charAt(1)==='[') { // SGR
+                if (!esc) esc=this._ctrlUnstyledName('\x1B')
+                cn=css['sgr'](esc+m[2].slice(1));
+            }
+            else {
+                cn=this._ctrlStyledName(m[2]);
+            }
+            r+=m[1]+cn;
+            s=m[3];
+        }
+
+        return r+s;
     }
 }

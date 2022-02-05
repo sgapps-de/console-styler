@@ -28,7 +28,12 @@
     "test": "jest --config jest.config.ts",
     "test:cover": "jest --config jest.config.ts --coverage",
     "test:prod": "npm run lint && npm run test -- --no-cache",
-    "cli": "tsc-check && node lib/cli.js"  },
+    "cli": "tsc-check && node lib/cli.js",
+    "bench:1": "tsc-check && node lib/bench/bench1.js",
+    "bench:2": "tsc-check && node lib/bench/bench2.js",
+    "bench:3": "tsc-check && node lib/bench/bench3.js",
+    "bench:4": "tsc-check && node lib/bench/bench4.js"
+  },
   "lint-staged": {
     "{src,test}/**/*.ts": [
       "eslint --fix"
