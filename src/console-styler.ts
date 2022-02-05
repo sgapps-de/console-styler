@@ -444,8 +444,8 @@ function stateShow(s: State | Settings): string {
     if (s.bg) { r=r+rs+"bg:'"+s.bg+"'"; rs=',' }
 
     if (s.ms) { r=r+rs+'ms:'+stateModifiersShow(s.ms); rs=',' };
-    if (s.mm) { r=r+rs+'mm:'+stateModifiersShow(s.ms); rs=',' };
-    if ((s as Settings).mr) { r=r+rs+'mr:'+stateModifiersShow(s.ms); rs=',' };
+    if (s.mm) { r=r+rs+'mm:'+stateModifiersShow(s.mm); rs=',' };
+    if (s.mr) { r=r+rs+'mr:'+stateModifiersShow(s.mr); rs=',' };
 
     return r+'}';
 }
@@ -912,21 +912,21 @@ export class ConsoleStyler {
         let   i: number = 0
 
         for (;;) {
-            const m:any = s.match(this._fmtRex)
+            const m:any = this._fmtRex.exec(s)
             if (!m) {
                 if (s) stk[i]=this._fAppend(stk[i],s);
                 break;
             }
-            if (m.groups.pre) stk[i]=this._fAppend(stk[i],m.groups.pre);
-            if (m.groups.name) {
-                stk[++i]=this._byName(m.groups.name)
+            if (m.index>0) stk[i]=this._fAppend(stk[i],s.slice(0,m.index));
+            if (m[1]) {
+                stk[++i]=this._byName(m[1])
                 stk[++i]='';
             }
             else if (i>0) {
                 i-=2;
                 stk[i]=this._fAppend(stk[i],this._fApply(stk[i+2],stk[i+1],as),as);
             }
-            s=m.groups.post
+            s=s.slice(m.index+m[0].length)
         }
 
         while (i>0) {
@@ -942,13 +942,13 @@ export class ConsoleStyler {
         if (Array.isArray(fx)) {
             const fx2 = fx[2] ?? '|'
             const sc = CONSOLE_STYLE_NAME_SPECIAL_CHARS.replace(fx2,'');
-            const rx = '^(?<pre>.*?)(?:(?:' +
+            const rx = '(?:(?:' +
                        this._escapeRegExp(fx[0]) +
-                       '(?<name>[' + sc + 'a-zA-Z0-9_]*)' + 
+                       '([' + sc + 'a-zA-Z0-9_]*)' + 
                        this._escapeRegExp(fx2) +
                        ')|(?:' +
                        this._escapeRegExp(fx[1]) +
-                       '))(?<post>.*)$'
+                       '))'
             this._fmtRex=new RegExp(rx,'ms')
         }
         else
