@@ -565,9 +565,10 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
                 break;
             case Modifier.UNDERLINE:
             case Modifier.DOUBLE_UNDERLINE:
-                sr=sr+((ss.ms & Modifier.DOUBLE_UNDERLINE) ? '21;' :
-                (ss.ms & Modifier.UNDERLINE) ? '4;' :
-                '24;');
+                if (ss.ms & Modifier.UNDERLINE)
+                    sr=sr+((s.ms & Modifier.DOUBLE_UNDERLINE) ? '24;4;' : '4;');
+                else
+                    sr=sr+((ss.ms & Modifier.DOUBLE_UNDERLINE) ? '21;' : '24;');
                 sx &= (~Modifier.ANY_UNDERLINE);
                 break;
             case Modifier.ITALIC:
