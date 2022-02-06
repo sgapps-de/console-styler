@@ -10,8 +10,8 @@ import { Modifier, State, Settings, StateStringList,
         import { TermInfo } from './terminfo';
 
 import  { EnvironmentOptions, CommandOptions, 
-    envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
-   } from './command-info';
+          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
+        } from './command-info';
 
 export type ConsoleStyleFunction = (s: string | StateStringList, cs: ConsoleStyler) => string | StateStringList;
 export type ConsoleStyleStringFunction = (s: string) => string;
@@ -70,7 +70,7 @@ const consoleStylesHandler = {
 
 // export type ConsoleStyleFunction = (s: string | AnsiString) => typeof s;
 export type ConsoleStyles        = { [key: string] : ConsoleStyle };
-export type ConsoleStyle         = { [key: string] : ConsoleStyle, (s: string): string, (s: StateStringList): StateStringList };
+export type ConsoleStyle         = { [key: string] : ConsoleStyle, (...s: any[]): string };
 
 export type ControlName  = string | ((s: string) => string);
 
@@ -80,6 +80,8 @@ export interface ConsoleStylerOptions {
     modifier?:    Modifier;
 
     term?:        TermInfo | string;
+
+    multiFmt?:    boolean,
 
     not?:         boolean,
     whiteIsDark?: boolean,
@@ -132,6 +134,8 @@ export class ConsoleStyler {
     modifier: Modifier;
 
     term:  TermInfo;
+
+    multiFmt: boolean;
     
     black!: ConsoleStyle;
     red!: ConsoleStyle;
@@ -225,6 +229,8 @@ export class ConsoleStyler {
 
         this.level=opts.level ?? this.term.level;
         this.modifier=opts.modifier ?? this.term.modifier;
+
+        this.multiFmt=opts.multiFmt ?? true;
 
         this.byName=this.byName.bind(this);
 
@@ -466,10 +472,16 @@ export class ConsoleStyler {
 
     protected _createStyle(ss: ConsoleStyleSettings): ConsoleStyle {
 
-        const sd: ConsoleStyleData = (Array.isArray(ss) ?
-                        this._applyList.bind(this,ss)
-                        :
-                        this._apply.bind(this,ss)) as unknown as ConsoleStyleData;
+        const cs: ConsoleStyler = this;
+
+        let f;
+
+        if (Array.isArray(ss))
+            f=function (...x:any[]) { return cs._applyList(ss,cs._applyArgs(x)); };
+        else
+            f=function (...x:any[]) { return cs._apply(ss,cs._applyArgs(x)); };
+
+        const sd: ConsoleStyleData = f as unknown as ConsoleStyleData;
 
         sd.styler=this;
         sd.style=this.byName;
@@ -683,6 +695,21 @@ export class ConsoleStyler {
         }
 
         return sx;
+    }
+
+    protected _applyArgs(sx: any): string {
+
+        if (Array.isArray(sx)) {
+            if (sx.length===1)
+                sx=sx[0];
+            else if (!this.multiFmt || sx[0].indexOf('%')<0)
+                sx=sx.join(' ');
+            else
+                sx=util.format.apply(null,sx);
+            return sx;
+        }
+        else
+            return sx.toString();
     }
 
     protected _applyList(ss: ConsoleStyleSettingsList, sx: string | StateStringList) {
