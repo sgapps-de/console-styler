@@ -132,7 +132,7 @@ export function sgrFromRgb(r: number, g: number, b: number, bg: boolean = false)
 export function sgrFromHex(hx: string, bg: boolean = false): string {
 
     const c: [ number, number, number ] | null = hexToRgb(hx);
-    return c ? sgrFromRgb(c[0],c[1],c[2]) : '36'
+    return c ? sgrFromRgb(c[0],c[1],c[2],bg) : (bg ? '46' : '36');
 }
 
 export function sgrFromC256(c: number, bg: boolean = false): string {
