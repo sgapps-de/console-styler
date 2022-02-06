@@ -1,13 +1,17 @@
 import util from 'util';
+
 import * as Colors from './colors';
-import { Modifier, State, Settings,
-         ANSI_SGR_REGEXP,
-         ANSI_NO_STATE, ANSI_NO_STATE_FINAL,
-         ANSI_NO_SETTINGS,
-         sgrPars2Settings,
-         settingsOverwrite,
-         StateStringList,
-         } from './state';
+
+import { Modifier, State, Settings, StateStringList,
+         ANSI_SGR_REGEXP, ANSI_NO_STATE, ANSI_NO_STATE_FINAL, ANSI_NO_SETTINGS,
+         sgrPars2Settings, settingsOverwrite,
+        } from './state';
+
+        import { TermInfo } from './terminfo';
+
+import  { EnvironmentOptions, CommandOptions, 
+    envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
+   } from './command-info';
 
 export type ConsoleStyleFunction = (s: string | StateStringList, cs: ConsoleStyler) => string | StateStringList;
 export type ConsoleStyleStringFunction = (s: string) => string;
@@ -73,9 +77,15 @@ export type ControlName  = string | ((s: string) => string);
 export interface ConsoleStylerOptions {
 
     level?:       number;
+    modifier?:    Modifier;
+
+    term?:        TermInfo | string;
 
     not?:         boolean,
     whiteIsDark?: boolean,
+
+    env?:         EnvironmentOptions,
+    cmdOpts?:     CommandOptions,
 
     alias?:     { [key: string]: ConsoleStyle | string },
     ctrlStyle?: { [key: string]: ConsoleStyle | string },
@@ -119,6 +129,9 @@ export class ConsoleStyler {
     s: ConsoleStyles;
 
     level: number;
+    modifier: Modifier;
+
+    term:  TermInfo;
     
     black!: ConsoleStyle;
     red!: ConsoleStyle;
@@ -199,7 +212,19 @@ export class ConsoleStyler {
 
         opts=opts ?? {};
 
-        this.level=opts.level ?? Colors.LEVEL_16M;
+        if (opts.term instanceof TermInfo)
+            this.term=opts.term;
+        else {
+            const tio = {
+                termType: opts.term,
+                env: opts.env,
+                cmdOpts: opts.cmdOpts,
+            };
+            this.term=new TermInfo(tio);
+        }
+
+        this.level=opts.level ?? this.term.level;
+        this.modifier=opts.modifier ?? this.term.modifier;
 
         this.byName=this.byName.bind(this);
 
@@ -233,7 +258,7 @@ export class ConsoleStyler {
         }
 
         for (const [ n, ms, mm ] of CONSOLE_STYLE_MODIFIER) {
-            this._ctorStyle(n,{ ms: ms, mm: (mm || ms), mr: 0 });
+            this._ctorModifier(n,ms,mm);
         }
 
         this._ctorFunctionStyle('reset',this._resetFunc.bind(this),'X');
@@ -422,7 +447,17 @@ export class ConsoleStyler {
             this._ctorStyle(n+'Bright', { ms: 0, mm: 0, mr:0, fg:''+(c+60) });
             this._ctorStyle(this._bgName(n)+'Bright', { ms: 0, mm: 0, mr:0, bg:''+(c+70) });
         }
-    }        
+    }
+
+    protected _ctorModifier(n: string, ms: number, mm: number, mr: number = 0): void {
+
+        if (mr=0 && ms<Modifier.STANDARD && !(this.modifier&ms))
+            ms=mm=0;
+        else
+            mm|=ms;
+    
+        this._ctorStyle(n,{ ms, mm, mr });
+    }
 
     protected _bgName(n: string): string {
 

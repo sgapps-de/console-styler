@@ -18,6 +18,10 @@ export enum Modifier {
     OVERLINE         = 0x0400,
     STANDARD         = 0x07FF,
 
+    WIN_TERM         = STANDARD & (~RAPID_BLINK),
+    WIN_CON          = STANDARD & (~RAPID_BLINK),
+    DEFAULT          = BOLD | UNDERLINE | INVERSE,
+
     FINAL            = 0x00010000,
     NOT_MODIFIER     = 0x00020000,
     BACKGROUND       = 0x00040000,
@@ -62,7 +66,7 @@ const escSeqCache      = new Map<string,Settings>();
 const escSeqCacheFinal = new Map<string,Settings>();
 
 // export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false): Settings {
-export function sgrPars2Settings(seqPars: string, ff: boolean = false): Settings {
+export function sgrPars2Settings(seqPars: string, ff: boolean = false, mx: Modifier = Modifier.STANDARD): Settings {
 
     let ss = ff ? escSeqCacheFinal.get(seqPars) : escSeqCache.get(seqPars);
     if (ss) return ss;
@@ -123,8 +127,19 @@ export function sgrPars2Settings(seqPars: string, ff: boolean = false): Settings
                 ms |= Modifier.STRIKE_THROUGH;
                 break;
             case 21:
-                mm |= Modifier.ANY_UNDERLINE;
-                ms = (ms & ~Modifier.UNDERLINE) | Modifier.DOUBLE_UNDERLINE;
+                if (mx & Modifier.DOUBLE_UNDERLINE) {
+                    mm |= Modifier.ANY_UNDERLINE;
+                    ms = (ms & ~Modifier.UNDERLINE) | Modifier.DOUBLE_UNDERLINE;
+                }
+                else if (ff) {
+                    mm &= (~Modifier.BOLD);
+                    ms &= (~Modifier.BOLD);
+                    mr |= Modifier.BOLD;
+                }
+                else {
+                    mm |= Modifier.BOLD;
+                    ms &= (~Modifier.BOLD);
+                }
                 break;
             case 22:
                 if (ff) {
@@ -505,7 +520,7 @@ export function stateColor256(s: State): State {
 
 export type StateStringParts = (State | string)[];
 
-export function sqrSplit(s: string, as?: State): StateStringParts {
+export function sqrSplit(s: string, as?: State, mx: Modifier = Modifier.STANDARD): StateStringParts {
 
     as = as ?? ANSI_NO_STATE;
 
@@ -521,7 +536,7 @@ export function sqrSplit(s: string, as?: State): StateStringParts {
             const m = ANSI_SGR_REGEXP.exec(r);
             if (!m) break;
             if (m.index>0) ss.push(as,r.slice(0,m.index));
-            as=stateUpdate(as,sgrPars2Settings(m[1] ?? '0',ff));
+            as=stateUpdate(as,sgrPars2Settings(m[1] ?? '0',ff,mx));
             r=r.slice(m.index+m[0].length);
         }
         if (r) ss.push(as,r);
@@ -529,7 +544,7 @@ export function sqrSplit(s: string, as?: State): StateStringParts {
     }
 }
 
-export function sgrMakeState(s: State, ss: State): string {
+export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDARD): string {
 
     let sr: string = '';
     let sx;
@@ -540,9 +555,12 @@ export function sgrMakeState(s: State, ss: State): string {
         switch (sm) {
             case Modifier.BOLD:
             case Modifier.DIM:
-                sr=sr+((ss.ms & Modifier.DIM) ? '2;' :
-                       (ss.ms & Modifier.BOLD) ? '1;' :
-                       '22;');
+                if (mx & Modifier.DOUBLE_UNDERLINE)
+                    sr=sr+((ss.ms & Modifier.DIM) ? '2;' :
+                        (ss.ms & Modifier.BOLD) ? '1;' :
+                        '22;');
+                else
+                    sr=sr+((ss.ms & Modifier.BOLD) ? '1;' : '21;');
                 sx &= (~Modifier.BOLD_DIM);
                 break;
             case Modifier.UNDERLINE:
@@ -643,7 +661,7 @@ export class StateStringList {
 
     {   this.styler=cs;
         this._initialState=cs._initialState;
-        this.parts=sqrSplit(s,cs._initialState);
+        this.parts=sqrSplit(s,cs._initialState,cs.modifier);
     }
 
     showParts(): string {
@@ -671,6 +689,7 @@ export class StateStringList {
         let s  = ANSI_NO_STATE;
         let ss = ANSI_NO_STATE;
         let r  = '';
+        const mx = this.styler.modifier;
 
         if (this.styler.level<Colors.LEVEL_16M)
             this.colorLevel(this.styler.level);
@@ -679,11 +698,11 @@ export class StateStringList {
             if (typeof x !== 'string')
                 ss=x;
             else if (x.indexOf('\n')<0) {
-                r=r+sgrMakeState(s,ss)+x;
+                r=r+sgrMakeState(s,ss,mx)+x;
                 s=ss;
             }
             else if (x==='\n' || x==='\r\n') {
-                r=r+sgrMakeState(s,ANSI_NO_STATE)+x;
+                r=r+sgrMakeState(s,ANSI_NO_STATE,mx)+x;
                 s=ANSI_NO_STATE;
             }
             else {
@@ -691,16 +710,16 @@ export class StateStringList {
                 for (;;) {
                     m=/^([^\r\n]*)(\r?\n)(.*)$/ms.exec(x);
                     if (!m) break;
-                    if (m[1]) { r=r+sgrMakeState(s,ss)+m[1]; s=ss; }
-                    r=r+sgrMakeState(s,ANSI_NO_STATE)+m[2];
+                    if (m[1]) { r=r+sgrMakeState(s,ss,mx)+m[1]; s=ss; }
+                    r=r+sgrMakeState(s,ANSI_NO_STATE,mx)+m[2];
                     s=ANSI_NO_STATE
                     x=m[3];
                 }
-                if (x) { r=r+sgrMakeState(s,ss)+x; s=ss; }
+                if (x) { r=r+sgrMakeState(s,ss,mx)+x; s=ss; }
             }
         }
 
-        r=r+sgrMakeState(s,ANSI_NO_STATE);
+        r=r+sgrMakeState(s,ANSI_NO_STATE,mx);
 
 //      console.log('toString ->',r.replace(/\x1B(\[[0-9;]*m)/g,'\x1B[4;31m€$1\x1B[0m'));
 
