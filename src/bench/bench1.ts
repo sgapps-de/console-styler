@@ -16,7 +16,7 @@ async function bench() {
         }),
 
         benny.add('Console styler', () => {
-            let s = cs.s.underline('Hallo Silvan');
+            let s = cs.a.underline('Hallo Silvan');
         }),
 
         benny.cycle(),

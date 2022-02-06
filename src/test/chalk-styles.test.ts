@@ -22,12 +22,12 @@ describe('Chalk Style Formating ...', () => {
   })
   
   it('Orange Text I', () => {
-    expect(chalk.sgr(chalk.s['#CC6600']('Orange')))
+    expect(chalk.sgr(chalk.a['#CC6600']('Orange')))
       .toBe('␛[38;2;204;102;0mOrange␛[m');
   })
   
   it('Oranger Text II', () => {
-    expect(chalk.sgr(chalk.s['#C60']('Orange')))
+    expect(chalk.sgr(chalk.a['#C60']('Orange')))
       .toBe('␛[38;2;204;102;0mOrange␛[m');
   })
   
