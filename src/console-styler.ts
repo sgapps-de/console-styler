@@ -101,28 +101,28 @@ const CONSOLE_STYLE_COLORS: [string, number][] = [
 
 ];
 
-const CONSOLE_STYLE_MODIFIER: [string, number, number][] = [
+const CONSOLE_STYLE_MODIFIER: [string, number[]][] = [
 
-    [ 'bold', Modifier.BOLD, 0 ],
-    [ 'dim', Modifier.DIM, 0 ],
-    [ 'italic', Modifier.ITALIC, 0 ],
-    [ 'underline', Modifier.UNDERLINE, 0 ],
-    [ 'ul', Modifier.UNDERLINE, 0 ],
-    [ 'doubleUnderline', Modifier.DOUBLE_UNDERLINE, 0 ],
-    [ 'dblUl', Modifier.DOUBLE_UNDERLINE, 0 ],
-    [ 'blink', Modifier.BLINK, 0 ],
-    [ 'inverse', Modifier.INVERSE, 0 ],
-    [ 'hidden', Modifier.HIDDEN, 0 ],
-    [ 'strikethrough', Modifier.STRIKE_THROUGH, 0 ],
-    [ 'strike', Modifier.STRIKE_THROUGH, 0 ],
-    [ 'overline', Modifier.OVERLINE, 0 ],
+    [ 'bold', [ Modifier.BOLD ] ],
+    [ 'dim', [ Modifier.DIM ] ],
+    [ 'italic', [ Modifier.ITALIC ] ],
+    [ 'underline', [ Modifier.UNDERLINE ] ],
+    [ 'ul', [ Modifier.UNDERLINE ] ],
+    [ 'doubleUnderline', [ Modifier.DOUBLE_UNDERLINE, 0, 0, Modifier.UNDERLINE ] ],
+    [ 'dblUl',  [ Modifier.DOUBLE_UNDERLINE, 0, 0, Modifier.UNDERLINE ] ],
+    [ 'blink', [ Modifier.BLINK ] ],
+    [ 'inverse', [ Modifier.INVERSE ] ],
+    [ 'hidden', [ Modifier.HIDDEN ] ],
+    [ 'strikethrough', [ Modifier.STRIKE_THROUGH ] ],
+    [ 'strike', [ Modifier.STRIKE_THROUGH ] ],
+    [ 'overline', [ Modifier.OVERLINE ] ],
 
-    [ 'not', Modifier.NOT_MODIFIER, 0 ],
-    [ 'bg',  Modifier.BACKGROUND, 0 ],
-    [ 'dark', Modifier.DARK, 0 ],
-    [ 'bright', Modifier.BRIGHT, 0 ],
+    [ 'not', [ Modifier.NOT_MODIFIER ] ],
+    [ 'bg', [ Modifier.BACKGROUND ] ],
+    [ 'dark', [ Modifier.DARK ] ],
+    [ 'bright', [ Modifier.BRIGHT ] ],
 
-    [ 'final', Modifier.FINAL, 0 ],
+    [ 'final', [ Modifier.FINAL ] ],
     
 ]
 
@@ -263,8 +263,8 @@ export class ConsoleStyler {
             this._ctorColor('grey',37);
         }
 
-        for (const [ n, ms, mm ] of CONSOLE_STYLE_MODIFIER) {
-            this._ctorModifier(n,ms,mm);
+        for (const [ n, mx ] of CONSOLE_STYLE_MODIFIER) {
+            this._ctorModifier(n,mx);
         }
 
         this._ctorFunctionStyle('reset',this._resetFunc.bind(this),'X');
@@ -455,13 +455,17 @@ export class ConsoleStyler {
         }
     }
 
-    protected _ctorModifier(n: string, ms: number, mm: number, mr: number = 0): void {
+    protected _ctorModifier(n: string, mx: number[]): void {
 
-        if (mr=0 && ms<Modifier.STANDARD && !(this.modifier&ms))
-            ms=mm=0;
-        else
-            mm|=ms;
-    
+        let ms,mm,mr: number;
+
+        ms=mx[0];
+        mm=(mx[1] ?? 0) | ms;
+        mr=mx[2] ?? 0;
+
+        if (mr===0 && ms<Modifier.STANDARD && !(this.modifier&ms))
+            ms=mm=mx[3] ?? 0;
+
         this._ctorStyle(n,{ ms, mm, mr });
     }
 
