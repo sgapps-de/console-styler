@@ -131,107 +131,55 @@ export function sgrPars2Settings(seqPars: string, ff: boolean = false, mx: Modif
                     mm |= Modifier.ANY_UNDERLINE;
                     ms = (ms & ~Modifier.UNDERLINE) | Modifier.DOUBLE_UNDERLINE;
                 }
-                else if (ff) {
+                else {
                     mm &= (~Modifier.BOLD);
                     ms &= (~Modifier.BOLD);
                     mr |= Modifier.BOLD;
                 }
-                else {
-                    mm |= Modifier.BOLD;
-                    ms &= (~Modifier.BOLD);
-                }
                 break;
             case 22:
-                if (ff) {
-                    mm &= (~Modifier.BOLD_DIM);
-                    ms &= (~Modifier.BOLD_DIM);
-                    mr |= Modifier.BOLD_DIM;
-                }
-                else {
-                    mm |= Modifier.BOLD_DIM;
-                    ms &= (~Modifier.BOLD_DIM);
-                }
+                mm &= (~Modifier.BOLD_DIM);
+                ms &= (~Modifier.BOLD_DIM);
+                mr |= Modifier.BOLD_DIM;
                 break;
             case 23:
-                if (ff) {
-                    mm &= (~Modifier.ITALIC);
-                    ms &= (~Modifier.ITALIC);
-                    mr |= Modifier.ITALIC;
-                }
-                else {
-                    mm |= Modifier.ITALIC;
-                    ms &= (~Modifier.ITALIC);
-                }
+                mm &= (~Modifier.ITALIC);
+                ms &= (~Modifier.ITALIC);
+                mr |= Modifier.ITALIC;
                 break;
             case 24:
-                if (ff) {
-                    mm &= (~Modifier.ANY_UNDERLINE);
-                    ms &= (~Modifier.ANY_UNDERLINE);
-                    mr |= Modifier.ANY_UNDERLINE;
-                }
-                else {
-                    mm |= Modifier.ANY_UNDERLINE;
-                    ms &= (~Modifier.ANY_UNDERLINE);
-                }
+                mm &= (~Modifier.ANY_UNDERLINE);
+                ms &= (~Modifier.ANY_UNDERLINE);
+                mr |= Modifier.ANY_UNDERLINE;
                 break;
             case 25:
-                if (ff) {
-                    mm &= (~Modifier.ANY_BLINK);
-                    ms &= (~Modifier.ANY_BLINK);
-                    mr |= Modifier.ANY_BLINK;
-                }
-                else {
-                    mm |= Modifier.ANY_BLINK;
-                    ms &= (~Modifier.ANY_BLINK);
-                }
+                mm &= (~Modifier.ANY_BLINK);
+                ms &= (~Modifier.ANY_BLINK);
+                mr |= Modifier.ANY_BLINK;
                 break;
             case 27:
-                if (ff) {
-                    mm &= (~Modifier.INVERSE);
-                    ms &= (~Modifier.INVERSE);
-                    mr |= Modifier.INVERSE;
-                }
-                else {
-                    mm |= Modifier.INVERSE;
-                    ms &= (~Modifier.INVERSE);
-                }
+                mm &= (~Modifier.INVERSE);
+                ms &= (~Modifier.INVERSE);
+                mr |= Modifier.INVERSE;
                 break;
             case 28:
-                if (ff) {
-                    mm &= (~Modifier.HIDDEN);
-                    ms &= (~Modifier.HIDDEN);
-                    mr |= Modifier.HIDDEN;
-                }
-                else {
-                    mm |= Modifier.HIDDEN;
-                    ms &= (~Modifier.HIDDEN);
-                }
+                mm &= (~Modifier.HIDDEN);
+                ms &= (~Modifier.HIDDEN);
+                mr |= Modifier.HIDDEN;
                 break;
             case 29:
-                if (ff) {
-                    mm &= (~Modifier.STRIKE_THROUGH);
-                    ms &= (~Modifier.STRIKE_THROUGH);
-                    mr |= Modifier.STRIKE_THROUGH;
-                }
-                else {
-                    mm |= Modifier.STRIKE_THROUGH;
-                    ms &= (~Modifier.STRIKE_THROUGH);
-                }
+                mm &= (~Modifier.STRIKE_THROUGH);
+                ms &= (~Modifier.STRIKE_THROUGH);
+                mr |= Modifier.STRIKE_THROUGH;
                 break;
             case 53:
                 mm |= Modifier.OVERLINE;
                 ms |= Modifier.OVERLINE;
                 break;
             case 55:
-                if (ff) {
-                    mm &= (~Modifier.OVERLINE);
-                    ms &= (~Modifier.OVERLINE);
-                    mr |= Modifier.OVERLINE;
-                }
-                else {
-                    mm |= Modifier.OVERLINE;
-                    ms &= (~Modifier.OVERLINE);
-                }
+                mm &= (~Modifier.OVERLINE);
+                ms &= (~Modifier.OVERLINE);
+                mr |= Modifier.OVERLINE;
                 break;
             case 30:
             case 31:
@@ -291,50 +239,15 @@ export function sgrPars2Settings(seqPars: string, ff: boolean = false, mx: Modif
                     i+=2;
                 }
                 break;
-            case 202:
-                mm &= (~Modifier.BOLD_DIM);
-                ms &= (~Modifier.BOLD_DIM);
-                mr |= Modifier.BOLD_DIM;
-                break;
-            case 203:
-                mm &= (~Modifier.ITALIC);
-                ms &= (~Modifier.ITALIC);
-                mr |= Modifier.ITALIC;
-                break;
-            case 204:
-                mm &= (~Modifier.ANY_UNDERLINE);
-                ms &= (~Modifier.ANY_UNDERLINE);
-                mr |= Modifier.ANY_UNDERLINE;
-                break;
-            case 205:
-                mm &= (~Modifier.ANY_BLINK);
-                ms &= (~Modifier.ANY_BLINK);
-                mr |= Modifier.ANY_BLINK;
-                break;
-            case 207:
-                mm &= (~Modifier.INVERSE);
-                ms &= (~Modifier.INVERSE);
-                mr |= Modifier.INVERSE;
-                break;
-            case 208:
-                mm &= (~Modifier.HIDDEN);
-                ms &= (~Modifier.HIDDEN);
-                mr |= Modifier.HIDDEN;
-                break;
-            case 209:
-                mm &= (~Modifier.STRIKE_THROUGH);
-                ms &= (~Modifier.STRIKE_THROUGH);
-                mr |= Modifier.STRIKE_THROUGH;
-                break;
-            case 253:
-                mm &= (~Modifier.OVERLINE);
-                ms &= (~Modifier.OVERLINE);
-                mr |= Modifier.OVERLINE;
-                break;
+            default:
+                if (c>200 && c<=220) {
+                    c=Modifier.BOLD<<(c-201);
+                    mm |= c;
+                    ms &= (~c);
+                    mr &= (~c);
+                }
         }
     }
-
-//  console.log('SEQ:',match[0].replace('\x1B','€'),'->',ansiStateShow({fg, bg, ms, mm, mr}));
 
     ss={ fg, bg, ms, mm, mr };
 
@@ -546,29 +459,45 @@ export function sqrSplit(s: string, as?: State, mx: Modifier = Modifier.STANDARD
 
 export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDARD): string {
 
-    let sr: string = '';
-    let sx;
+    let sr  : string = '';
+    let sx  : number;
+    let sxx : number;
+    let cx  : number;
 
-    sx=(s.ms ^ ss.ms) | (ss.mm & (~s.mm));
+    sx=(ss.ms ^ s.ms) | (s.mm & (~ss.mm));
+    sxx=(ss.ms & Modifier.FINAL) ? 0 : ((ss.mm & (~ss.ms)) & (~s.mm));
+
     for (let sm=1;sm<=sx;sm<<=1) {
         if (!(sx & sm)) continue;
         switch (sm) {
             case Modifier.BOLD:
             case Modifier.DIM:
-                if (mx & Modifier.DOUBLE_UNDERLINE)
-                    sr=sr+((ss.ms & Modifier.DIM) ? '2;' :
-                        (ss.ms & Modifier.BOLD) ? '1;' :
-                        '22;');
+                if (ss.ms & Modifier.BOLD) {
+                    sr += '1;';
+                    sxx &= (~Modifier.BOLD_DIM);
+                }
+                else if (ss.ms & Modifier.DIM) {
+                    sr += '2;';
+                    sxx &= (~Modifier.BOLD_DIM);
+                }
+                else if (mx & Modifier.DOUBLE_UNDERLINE)
+                    sr += '22;'
                 else
-                    sr=sr+((ss.ms & Modifier.BOLD) ? '1;' : '21;');
+                    sr += '21;'
                 sx &= (~Modifier.BOLD_DIM);
                 break;
             case Modifier.UNDERLINE:
             case Modifier.DOUBLE_UNDERLINE:
-                if (ss.ms & Modifier.UNDERLINE)
-                    sr=sr+((s.ms & Modifier.DOUBLE_UNDERLINE) ? '24;4;' : '4;');
+                if (ss.ms & Modifier.UNDERLINE) {
+                    sr += ((s.ms & Modifier.DOUBLE_UNDERLINE) ? '24;4;' : '4;');
+                    sxx &= (~Modifier.ANY_UNDERLINE);
+                }
+                else if (ss.ms & Modifier.DOUBLE_UNDERLINE) {
+                    sr += '21;'
+                    sxx &= (~Modifier.ANY_UNDERLINE);
+                }
                 else
-                    sr=sr+((ss.ms & Modifier.DOUBLE_UNDERLINE) ? '21;' : '24;');
+                    sr += '24;'
                 sx &= (~Modifier.ANY_UNDERLINE);
                 break;
             case Modifier.ITALIC:
@@ -585,9 +514,16 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
                 break;
             case Modifier.BLINK:
             case Modifier.RAPID_BLINK:
-                sr=sr+((ss.ms & Modifier.RAPID_BLINK) ? '6;' :
-                        (ss.ms & Modifier.BLINK) ? '5;' :
-                        '25;');
+                if (ss.ms & Modifier.BLINK) {
+                    sr += '5;';
+                    sxx &= (~Modifier.ANY_BLINK);
+                }
+                else if (ss.ms & Modifier.RAPID_BLINK) {
+                    sr += '6;';
+                    sxx &= (~Modifier.ANY_BLINK);
+                }
+                else
+                    sr += '25;'
                 sx &= (~Modifier.ANY_BLINK);
                 break;
             case Modifier.OVERLINE:
@@ -596,42 +532,9 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
         }
     }
 
-    sx=(ss.ms & Modifier.FINAL) ? 0 : (s.mm & (~ss.mm));
-    for (let sm=1;sm<=sx;sm<<=1) {
-        if (!(sx & sm)) continue;
-        switch (sm) {
-            case Modifier.BOLD:
-            case Modifier.DIM:
-                sr=sr+'202;'
-                sx &= (Modifier.BOLD_DIM);
-                break;
-            case Modifier.UNDERLINE:
-            case Modifier.DOUBLE_UNDERLINE:
-                sr=sr+'204;'
-                sx &= (Modifier.ANY_UNDERLINE);
-                break;
-            case Modifier.BLINK:
-            case Modifier.RAPID_BLINK:
-                sr=sr+'205;'
-                sx &= (Modifier.ANY_BLINK);
-                break;
-            case Modifier.ITALIC:
-                sr=sr+'203;';
-                break;
-            case Modifier.INVERSE:
-                sr=sr+'207;'
-                break;
-            case Modifier.HIDDEN:
-                sr=sr+'208;';
-                break;
-            case Modifier.STRIKE_THROUGH:
-                sr=sr+'209;';
-                break;
-            case Modifier.OVERLINE:
-                sr=sr+'253;';
-                break;
-        }
-    }
+    cx=201;
+    for (let sm=1;sm<=sxx;sm<<=1,cx+=1) {
+        if (sxx & sm) sr+=cx+';'; }
 
     if (ss.fg!==s.fg) {
         if (ss.fg)
@@ -648,7 +551,7 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
 
 //  console.log('Make:',ansiStateShow(s),'->',ansiStateShow(ss),'->',sr);
 
-    if (sr && !ss.fg && !ss.bg && !(ss.mm & Modifier.STANDARD)) return '\x1B[0m';
+    if (sr && !ss.fg && !ss.bg && !(ss.mm & Modifier.STANDARD)) return '\x1B[m';
 
     return sr ? '\x1B['+sr.slice(0,-1)+'m' : ''
 }
@@ -662,7 +565,7 @@ export class StateStringList {
 
     {   this.styler=cs;
         this._initialState=cs._initialState;
-        this.parts=sqrSplit(s,cs._initialState,cs.modifier);
+        this.parts=sqrSplit(s,this._initialState,cs.modifier);
     }
 
     showParts(): string {
@@ -720,7 +623,14 @@ export class StateStringList {
             }
         }
 
-        r=r+sgrMakeState(s,ANSI_NO_STATE,mx);
+//      console.log('toString -> s='+stateShow(s));
+
+        if (s.fg || s.bg)
+            r+='\x1B[m';
+        else if ((((s.ms & Modifier.FINAL) ? 0 : s.mm) | s.ms) & Modifier.STANDARD)
+            r+='\x1B[m';
+
+//      r=r+sgrMakeState(s,ANSI_NO_STATE,mx);
 
 //      console.log('toString ->',r.replace(/\x1B(\[[0-9;]*m)/g,'\x1B[4;31m€$1\x1B[0m'));
 
@@ -730,7 +640,7 @@ export class StateStringList {
     reset(): void {
 
         const s = this.parts.map(x => (typeof x === 'string') ? x : '').join('');
-        this.parts=[this.styler._initialState,s];
+        this.parts=[this._initialState,s];
 
     }
 
@@ -777,10 +687,14 @@ export class StateStringList {
         const p = this.parts;
         const l = p.length;
 
+//      console.log("Apply: ",this.showParts()," + ",stateShow(ss));
+
         for (let i=0;i<l;++i) {
             if (typeof p[i] === 'string') continue;
             p[i]=stateApply(p[i] as State,ss);
         }
+
+//      console.log("     ->",this.showParts());
     }
 
     applyStringFunction(f: (s: string) => string)  {

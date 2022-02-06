@@ -4,7 +4,7 @@ import * as Colors from './colors';
 
 import { Modifier, State, Settings, StateStringList,
          ANSI_SGR_REGEXP, ANSI_NO_STATE, ANSI_NO_STATE_FINAL, ANSI_NO_SETTINGS,
-         sgrPars2Settings, settingsOverwrite,
+         sgrPars2Settings, settingsOverwrite, stateShow,
         } from './state';
 
         import { TermInfo } from './terminfo';
@@ -83,9 +83,6 @@ export interface ConsoleStylerOptions {
 
     multiFmt?:    boolean,
 
-    not?:         boolean,
-    whiteIsDark?: boolean,
-
     env?:         EnvironmentOptions,
     cmdOpts?:     CommandOptions,
 
@@ -97,8 +94,8 @@ export interface ConsoleStylerOptions {
 const CONSOLE_STYLE_COLORS: [string, number][] = [
 
     [ 'black', 30], [ 'red', 31 ], [ 'green', 32 ], [ 'yellow', 33 ], [ 'blue', 34], 
-    [ 'magenta', 35 ], [ 'cyan', 36 ],
-
+    [ 'magenta', 35 ], [ 'cyan', 36 ], [ 'white', 37 ],
+    [ 'gray', 90 ], [ 'grey', 90 ],
 ];
 
 const CONSOLE_STYLE_MODIFIER: [string, number[]][] = [
@@ -111,6 +108,7 @@ const CONSOLE_STYLE_MODIFIER: [string, number[]][] = [
     [ 'doubleUnderline', [ Modifier.DOUBLE_UNDERLINE, 0, 0, Modifier.UNDERLINE ] ],
     [ 'dblUl',  [ Modifier.DOUBLE_UNDERLINE, 0, 0, Modifier.UNDERLINE ] ],
     [ 'blink', [ Modifier.BLINK ] ],
+    [ 'rapidBlink', [ Modifier.BLINK, 0, 0, Modifier.BLINK ] ],
     [ 'inverse', [ Modifier.INVERSE ] ],
     [ 'hidden', [ Modifier.HIDDEN ] ],
     [ 'strikethrough', [ Modifier.STRIKE_THROUGH ] ],
@@ -191,6 +189,7 @@ export class ConsoleStyler {
     doubleUnderline!: ConsoleStyle;
     dblUl!: ConsoleStyle;
     blink!: ConsoleStyle;
+    rapidBlink!: ConsoleStyle;
     inverse!: ConsoleStyle;
     hidden!: ConsoleStyle;
     strikethrough!: ConsoleStyle;
@@ -234,8 +233,7 @@ export class ConsoleStyler {
 
         this.byName=this.byName.bind(this);
 
-        this._notModifiers=!!opts.not;
-        this._initialState=this._notModifiers ? ANSI_NO_STATE : ANSI_NO_STATE_FINAL;
+        this._initialState=ANSI_NO_STATE;
 
         let sd: any = { styler: this, styles: {} }
 
@@ -251,17 +249,6 @@ export class ConsoleStyler {
 
         for (const [ n, c ] of CONSOLE_STYLE_COLORS)
             this._ctorColor(n,c);
-
-        if (opts.whiteIsDark) {
-            this._ctorColor('white',37);
-            this._ctorColor('gray',90);
-            this._ctorColor('grey',90);
-        }
-        else {
-            this._ctorColor('white',97);
-            this._ctorColor('gray',37);
-            this._ctorColor('grey',37);
-        }
 
         for (const [ n, mx ] of CONSOLE_STYLE_MODIFIER) {
             this._ctorModifier(n,mx);
@@ -285,45 +272,30 @@ export class ConsoleStyler {
         if (opts.ctrlName) this.ctrlName(opts.ctrlName);
     }
 
-    f(s: string, final: boolean = true): string {
+    f(... sx: any[]): string {
 
-        if (this._notModifiers && final) {
-            const is = this._initialState;
-            this._initialState=ANSI_NO_STATE_FINAL;
-            const r = this.f(s,false);
-            this._initialState=is;
-            return r;
-        }
+        const is = this._initialState;
+        this._initialState=ANSI_NO_STATE_FINAL;
 
-        let   stk: any[] = ['']
-        let   i: number = 0
+        const r=this._format(this._applyArgs(sx));
 
-        for (;;) {
-            const m:any = this._fmtRex.exec(s)
-            if (!m) {
-                if (s) stk[i]=this._fAppend(stk[i],s);
-                break;
-            }
-            if (m.index>0) stk[i]=this._fAppend(stk[i],s.slice(0,m.index));
-            if (m[1]) {
-                stk[++i]=this._byName(m[1])
-                stk[++i]='';
-            }
-            else if (i>0) {
-                i-=2;
-                stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
-            }
-            s=s.slice(m.index+m[0].length)
-        }
+        this._initialState=is;
 
-        while (i>0) {
-            i-=2;
-            stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
-        }
-
-        return stk[0].toString();
+        return r;
     }
 
+    fx(... sx: any[]): string {
+
+        const is = this._initialState;
+        this._initialState=ANSI_NO_STATE;
+
+        const r=this._format(this._applyArgs(sx));
+
+        this._initialState=is;
+
+        return r;
+    }
+    
     setFormat(fx: [ string, string ] | [ string, string, string ] | RegExp) {
 
         if (Array.isArray(fx)) {
@@ -424,7 +396,7 @@ export class ConsoleStyler {
 
     protected _sd: ConsoleStylesData;
 
-    protected _notModifiers: boolean;
+//  protected _notModifiers: boolean;
 
     protected _styleCache: Map<string, ConsoleStyle>;
 
@@ -463,8 +435,9 @@ export class ConsoleStyler {
         mm=(mx[1] ?? 0) | ms;
         mr=mx[2] ?? 0;
 
+        // Alternative ?
         if (mr===0 && ms<Modifier.STANDARD && !(this.modifier&ms))
-            ms=mm=mx[3] ?? 0;
+            ms=mm=((mx[3] ?? 0) & this.modifier);
 
         this._ctorStyle(n,{ ms, mm, mr });
     }
@@ -570,7 +543,7 @@ export class ConsoleStyler {
             else if (n.charAt(0)==='%')
                 sx=this._c16Settings(n);
             else if (/[0-9;]+/.test(n))
-                sx=sgrPars2Settings(n,!this._notModifiers);
+                sx=sgrPars2Settings(n,true);
             else
                 throw Error(`unknown console style '${n}'`)
 
@@ -661,6 +634,37 @@ export class ConsoleStyler {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     }
 
+    protected _format(s: string): string {
+
+        let   stk: any[] = ['']
+        let   i: number = 0
+
+        for (;;) {
+            const m:any = this._fmtRex.exec(s)
+            if (!m) {
+                if (s) stk[i]=this._fAppend(stk[i],s);
+                break;
+            }
+            if (m.index>0) stk[i]=this._fAppend(stk[i],s.slice(0,m.index));
+            if (m[1]) {
+                stk[++i]=this._byName(m[1])
+                stk[++i]='';
+            }
+            else if (i>0) {
+                i-=2;
+                stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
+            }
+            s=s.slice(m.index+m[0].length)
+        }
+
+        while (i>0) {
+            i-=2;
+            stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
+        }
+
+        return stk[0].toString();
+    }
+
     protected _fAppend(s1: string | StateStringList, s2: string | StateStringList) {
 
         if (!s1) return s2;
@@ -668,11 +672,11 @@ export class ConsoleStyler {
 
         if (typeof s1 === 'string') {
             if (typeof s2 === 'string') return s1+s2;
-            s2.addFrontSeq(s1,this._initialState);
+            s2.addFront(s1);
             return s2;
         }
         else if (typeof s2 === 'string') {
-            s1.addBackSeq(s2,this._initialState);
+            s1.addBack(s2);
             return s1;
         }
         else {
