@@ -20,6 +20,7 @@ export type ConsoleStyleAliasFunction = ConsoleStyleFunction | ConsoleStyleStrin
 
 type ConsoleStyleSettingsList = (Settings | ConsoleStyleFunction)[];
 type ConsoleStyleSettings = Settings | ConsoleStyleSettingsList;
+type ConsoleStyleSpecialFactory = (nn: string, ss: ConsoleStyleSettings) => ConsoleStyle;;
 
 interface ConsoleStyleData {
 
@@ -36,7 +37,6 @@ const consoleStyleHandler = {
         let p: any;
 
         if (p=sd.prop[prop]) return p;
-//      if (prop==='_SETTINGS') return sd.set;
 
         return sd.prop[prop]=sd.style(prop,sd.set);
     },
@@ -70,7 +70,91 @@ const consoleStylesHandler = {
 
 // export type ConsoleStyleFunction = (s: string | AnsiString) => typeof s;
 export type ConsoleStyles        = { [key: string] : ConsoleStyle };
-export type ConsoleStyle         = { [key: string] : ConsoleStyle, (...s: any[]): string };
+export type ConsoleStyle = { 
+    (...s: any[]): string,
+
+    hex: (hx: string) => ConsoleStyle,
+    bgHex: (hx: string) => ConsoleStyle,
+
+    rgb:   (r: number, g: number, b: number) => ConsoleStyle,
+    bgRgb: (r: number, g: number, b: number) => ConsoleStyle,
+
+    a: ConsoleStyles,
+
+    final: ConsoleStyle;
+    reset: ConsoleStyle;
+    none: ConsoleStyle;
+
+    black: ConsoleStyle;
+    red: ConsoleStyle;
+    green: ConsoleStyle;
+    yellow: ConsoleStyle;
+    blue: ConsoleStyle;
+    magenta: ConsoleStyle;
+    cyan: ConsoleStyle;
+    grey: ConsoleStyle;
+    gray: ConsoleStyle;
+    white: ConsoleStyle;
+
+    blackBright: ConsoleStyle;
+    redBright: ConsoleStyle;
+    greenBright: ConsoleStyle;
+    yellowBright: ConsoleStyle;
+    blueBright: ConsoleStyle;
+    magentaBright: ConsoleStyle;
+    cyanBright: ConsoleStyle;
+    greyBright: ConsoleStyle;
+    grayBright: ConsoleStyle;
+    whiteBright: ConsoleStyle;
+
+    bgBlack: ConsoleStyle;
+    bgRed: ConsoleStyle;
+    bgGreen: ConsoleStyle;
+    bgYellow: ConsoleStyle;
+    bgBlue: ConsoleStyle;
+    bgMagenta: ConsoleStyle;
+    bgCyan: ConsoleStyle;
+    bgGrey: ConsoleStyle;
+    bgGray: ConsoleStyle;
+    bgWhite: ConsoleStyle;
+
+    bgBlackBright: ConsoleStyle;
+    bgRedBright: ConsoleStyle;
+    bgGreenBright: ConsoleStyle;
+    bgYellowBright: ConsoleStyle;
+    bgBlueBright: ConsoleStyle;
+    bgMagentaBright: ConsoleStyle;
+    bgCyanBright: ConsoleStyle;
+    bgGreyBright: ConsoleStyle;
+    bgGrayBright: ConsoleStyle;
+    bgWhiteBright: ConsoleStyle;
+
+    bg: ConsoleStyle;
+    not: ConsoleStyle;
+
+    bold: ConsoleStyle;
+    dim: ConsoleStyle;
+    italic: ConsoleStyle;
+    underline: ConsoleStyle;
+    ul: ConsoleStyle;
+    doubleUnderline: ConsoleStyle;
+    dblUl: ConsoleStyle;
+    blink: ConsoleStyle;
+    rapidBlink: ConsoleStyle;
+    inverse: ConsoleStyle;
+    hidden: ConsoleStyle;
+    strikethrough: ConsoleStyle;
+    strike: ConsoleStyle;
+    overline: ConsoleStyle;
+
+    visible: ConsoleStyle;
+
+    sgr: ConsoleStyle;
+    ctrl: ConsoleStyle;
+
+    lower: ConsoleStyle;
+    upper: ConsoleStyle;
+};
 
 export type ControlName  = string | ((s: string) => string);
 
@@ -124,9 +208,11 @@ const CONSOLE_STYLE_MODIFIER: [string, number[]][] = [
     
 ]
 
-export class ConsoleStyler {
+const CONSOLE_STYLER_BIND: string[] = [
+    'f', 'fx', 't', 'tx',
+]
 
-    s: ConsoleStyles;
+export class ConsoleStyler {
 
     level: number;
     modifier: Modifier;
@@ -135,6 +221,13 @@ export class ConsoleStyler {
 
     multiFmt: boolean;
     
+    a: ConsoleStyles;
+
+    hex: (hx: string) => ConsoleStyle;
+    bgHex: (hx: string) => ConsoleStyle;
+    rgb: (r: number, g: number, b: number) => ConsoleStyle;
+    bgRgb: (r: number, g: number, b: number) => ConsoleStyle;
+
     black!: ConsoleStyle;
     red!: ConsoleStyle;
     green!: ConsoleStyle;
@@ -237,12 +330,24 @@ export class ConsoleStyler {
 
         let sd: any = { styler: this, styles: {} }
 
-        this.s=new Proxy<ConsoleStylesData>(sd,consoleStylesHandler) as unknown as ConsoleStyles;
+        this.a=new Proxy<ConsoleStylesData>(sd,consoleStylesHandler) as unknown as ConsoleStyles;
         sd._emptyStyle=this._createStyle(ANSI_NO_SETTINGS);
         this._sd=sd as ConsoleStylesData;
 
         this._byNameCache = new Map<string, ConsoleStyleSettings>();
         this._styleCache = new Map<string, ConsoleStyle>();
+
+        this._styleSpecial = {
+            hex: this._hexFactory.bind(this,false),
+            bgHex: this._hexFactory.bind(this,true),
+            rgb: this._rgbFactory.bind(this,false),
+            bgRgb: this._rgbFactory.bind(this,true),
+        };
+
+        this.hex=this._hexFunction.bind(this,ANSI_NO_SETTINGS,false);
+        this.bgHex=this._hexFunction.bind(this,ANSI_NO_SETTINGS,true);
+        this.rgb=this._rgbFunction.bind(this,ANSI_NO_SETTINGS,false);
+        this.bgRgb=this._rgbFunction.bind(this,ANSI_NO_SETTINGS,true);
 
         (this as any)['none']=sd.styles['none']=sd._emptyStyle;
         this._styleCache.set(this._settingsName(ANSI_NO_SETTINGS),sd._emptyStyle);
@@ -266,6 +371,8 @@ export class ConsoleStyler {
         this._ctrlNameCache={};
 
         this.setFormat(['{{','}}','|']);
+
+        for(const n of CONSOLE_STYLER_BIND) (this as any)[n]=(this as any)[n].bind(this);
 
         if (opts.alias) this.alias(opts.alias);
         if (opts.ctrlStyle) this.ctrlStyle(opts.ctrlStyle);
@@ -295,6 +402,16 @@ export class ConsoleStyler {
 
         return r;
     }
+
+    t(str:TemplateStringsArray, ... args: any[]): string {
+
+        return this._tFormat(str,args,ANSI_NO_STATE_FINAL);
+    }
+    
+    tx(str:TemplateStringsArray, ... args: any[]): string {
+
+        return this._tFormat(str,args,ANSI_NO_STATE);
+    }
     
     setFormat(fx: [ string, string ] | [ string, string, string ] | RegExp) {
 
@@ -321,12 +438,16 @@ export class ConsoleStyler {
         s=this._sd.styles[nn];
         if (s) {
             if (!ss) return s;
-            ss=this._settingsOverwrite(ss,this._styleSettings(s))
+            ss=this._settingsOverwrite(ss,this._styleSettings(s));
             return this._settingsStyle(ss);
         }
 
-        if (ss)
-            ss=this._settingsOverwrite(ss,this._byName(nn))
+        const sf = this._styleSpecial[nn];
+        if (sf) return sf(nn,ss ?? ANSI_NO_SETTINGS);
+
+        if (ss) {
+            ss=this._settingsOverwrite(ss,this._byName(nn));
+        }
         else
             ss=this._byName(nn);
 
@@ -398,6 +519,8 @@ export class ConsoleStyler {
 
 //  protected _notModifiers: boolean;
 
+    protected _styleSpecial: { [key: string]: ConsoleStyleSpecialFactory }
+
     protected _styleCache: Map<string, ConsoleStyle>;
 
     protected _fmtRex!: RegExp
@@ -465,7 +588,7 @@ export class ConsoleStyler {
         sd.set=ss;
         sd.prop={ '_SETTINGS': ss };
 
-        return new Proxy<ConsoleStyleData>(sd,consoleStyleHandler) as unknown as ConsoleStyle;
+        return sd.prop.a=new Proxy<ConsoleStyleData>(sd,consoleStyleHandler) as unknown as ConsoleStyle;
     }
 
     protected _styleFromFunction(f: ConsoleStyleAliasFunction, fType: string): ConsoleStyle {
@@ -537,7 +660,7 @@ export class ConsoleStyler {
             if (s=this._sd.styles[n])
                 sx=this._styleSettings(s);
             else if (n.charAt(0)==='#')
-                sx=this._ansiHexSettings(n);
+                sx=this._hexSettings(n);
             else if (n.charAt(0)==='@')
                 sx=this._c256Settings(n);
             else if (n.charAt(0)==='%')
@@ -605,15 +728,17 @@ export class ConsoleStyler {
         else    return { fg:''+c, ms: 0, mm: 0, mr:0}
     }
 
-    protected _ansiHexSettings(hx: string): Settings {
+    protected _hexSettings(hx: string, bf: boolean = false): Settings {
 
         let fg,bg: string | undefined;
         let s: number;
 
         if ((s=hx.indexOf(':'))>=0) {
             if (s>0) fg=Colors.sgrFromHex(hx.slice(0,s));
-            if (s+1<hx.length) bg=Colors.sgrFromHex(hx.slice(s+1));
+            if (s+1<hx.length) bg=Colors.sgrFromHex(hx.slice(s+1),true);
         }
+        else if (bf)
+            bg=Colors.sgrFromHex(hx,true);
         else
             fg=Colors.sgrFromHex(hx);
 
@@ -632,6 +757,20 @@ export class ConsoleStyler {
     protected _escapeRegExp(str: string): string {
 
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    }
+
+    protected _tFormat(str:TemplateStringsArray, args: any[], s: State): string {
+
+        let sf:string = str.join('\uEF33');
+
+        const is = this._initialState;
+        this._initialState=ANSI_NO_STATE;
+        sf=this._format(sf);
+        this._initialState=is;
+
+        return sf.split('\uEF33').reduce((r: string, s:string, i: number) => {
+            return r+s+(args[i]?.toString() ?? '');
+        },'');
     }
 
     protected _format(s: string): string {
@@ -901,5 +1040,34 @@ export class ConsoleStyler {
     {  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
        return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`
     }
+
+    protected _hexFunction(ss: ConsoleStyleSettings, bf: boolean, hx: string): ConsoleStyle {
+
+        const sh: Settings = this._hexSettings(hx,bf);
+
+        ss=this._settingsOverwrite(ss,sh);
+        return this._settingsStyle(ss);
+    }
+
+    protected _hexFactory(bf: boolean, nn: string, ss: ConsoleStyleSettings): ConsoleStyle {
+
+        return this._hexFunction.bind(this,ss,bf) as unknown as ConsoleStyle;
+    }
     
+    protected _rgbFunction(ss: ConsoleStyleSettings, bf: boolean, r: number, g: number, b: number): ConsoleStyle {
+
+        const sc =  bf ?
+                        this._colorSettings(undefined,Colors.sgrFromRgb(r,g,b,true))
+                    :
+                        this._colorSettings(Colors.sgrFromRgb(r,g,b,false),undefined);
+
+        ss=this._settingsOverwrite(ss,sc);
+
+        return this._settingsStyle(ss);
+    }
+
+    protected _rgbFactory(bf: boolean, nn: string, ss: ConsoleStyleSettings): ConsoleStyle {
+
+        return this._rgbFunction.bind(this,ss,bf) as unknown as ConsoleStyle;
+    }
 }
