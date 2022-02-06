@@ -11,7 +11,7 @@ describe('Formating with cs.s ...', () => {
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ ctrlName: CTRL_NAMES });
+    cs=new ConsoleStyler({ term: 'test',  ctrlName: CTRL_NAMES });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.s.sgr(cs.s.none('None'))).toBe('None');
   })
@@ -42,18 +42,18 @@ describe('Formating with cs.s ...', () => {
   })
 
   it('Underlined Text Partly Red', () => {
-    expect(cs.s.sgr(cs.s.underline('Die '+cs.s.red('Red')+' Farbe')))
-      .toBe('␛[4mDie ␛[31mRed␛[39m Farbe␛[0m');
+    expect(cs.s.sgr(cs.s.underline('The '+cs.s.red('Red')+' Color')))
+      .toBe('␛[4mThe ␛[31mRed␛[39m Color␛[0m');
   })
 
   it('Red Text Partly Underlined', () => {
-    expect(cs.s.sgr(cs.s.red('Die '+cs.s.underline('Red')+' Farbe')))
-      .toBe('␛[31mDie ␛[4mRed␛[24m Farbe␛[0m');
+    expect(cs.s.sgr(cs.s.red('The '+cs.s.underline('Red')+' Color')))
+      .toBe('␛[31mThe ␛[4mRed␛[24m Color␛[0m');
   })
 
   it('Red Text Partly Bold', () => {
-    expect(cs.s.sgr(cs.s.red('Die '+cs.s.bold('Red')+' Farbe')))
-      .toBe('␛[31mDie ␛[1mRed␛[22m Farbe␛[0m');
+    expect(cs.s.sgr(cs.s.red('The '+cs.s.bold('Red')+' Color')))
+      .toBe('␛[31mThe ␛[1mRed␛[22m Color␛[0m');
   })
 
   it('Bright Black I', () => {

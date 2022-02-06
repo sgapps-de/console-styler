@@ -11,7 +11,7 @@ describe('Formating With Color Level 0 ...', () => {
     let cs: ConsoleStyler;
 
     it('new ConsoleStyler', () => {
-        cs=new ConsoleStyler({ level: 0, ctrlName: CTRL_NAMES });
+        cs=new ConsoleStyler({ term: 'test', level: 0, ctrlName: CTRL_NAMES });
         expect(cs instanceof ConsoleStyler).toBe(true);
         expect(cs.s.sgr(cs.s.none('None'))).toBe('None');
     })
@@ -47,7 +47,7 @@ describe('Formating With Color Level 1 ...', () => {
     let cs: ConsoleStyler;
   
     it('new ConsoleStyler', () => {
-        cs=new ConsoleStyler({ level: 1, ctrlName: CTRL_NAMES });
+        cs=new ConsoleStyler({ term: 'test', level: 1, ctrlName: CTRL_NAMES });
         expect(cs instanceof ConsoleStyler).toBe(true);
         expect(cs.s.sgr(cs.s.none('None'))).toBe('None');
     })
@@ -83,7 +83,7 @@ describe('Formating With Color Level 2 ...', () => {
     let cs: ConsoleStyler;
   
     it('new ConsoleStyler', () => {
-        cs=new ConsoleStyler({ level: 2, ctrlName: CTRL_NAMES });
+        cs=new ConsoleStyler({ term: 'test', level: 2, ctrlName: CTRL_NAMES });
         expect(cs instanceof ConsoleStyler).toBe(true);
         expect(cs.s.sgr(cs.s.none('None'))).toBe('None');
     })
@@ -119,7 +119,7 @@ describe('Formating With Color Level 3 ...', () => {
     let cs: ConsoleStyler;
   
     it('new ConsoleStyler', () => {
-        cs=new ConsoleStyler({ level: 3, ctrlName: CTRL_NAMES });
+        cs=new ConsoleStyler({ term: 'test', level: 3, ctrlName: CTRL_NAMES });
         expect(cs instanceof ConsoleStyler).toBe(true);
         expect(cs.s.sgr(cs.s.none('None'))).toBe('None');
     })

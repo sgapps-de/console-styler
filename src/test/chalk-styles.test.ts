@@ -11,7 +11,7 @@ describe('Chalk Style Formating ...', () => {
   let chalk: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    chalk=new ConsoleStyler({ ctrlName: CTRL_NAMES });
+    chalk=new ConsoleStyler({ term: 'test', ctrlName: CTRL_NAMES });
     expect(chalk instanceof ConsoleStyler).toBe(true);
     expect(chalk.sgr(chalk.none('None'))).toBe('None');
   })

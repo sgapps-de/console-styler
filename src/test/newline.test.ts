@@ -11,7 +11,7 @@ describe('Formating of "\\n"...', () => {
     let cs: ConsoleStyler;
 
     it('new ConsoleStyler', () => {
-        cs = new ConsoleStyler({ ctrlName: CTRL_NAMES });
+        cs = new ConsoleStyler({ term: 'test',  ctrlName: CTRL_NAMES });
         expect(cs instanceof ConsoleStyler).toBe(true);
         expect(cs.s.sgr(cs.s.none('None'))).toBe('None');
     })
