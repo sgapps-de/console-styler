@@ -18,46 +18,46 @@ describe('Chalk Style Formating ...', () => {
 
   it('Red Text', () => {
     expect(chalk.sgr(chalk.red('Red')))
-      .toBe('␛[31mRed␛[0m');
+      .toBe('␛[31mRed␛[m');
   })
   
   it('Orange Text I', () => {
     expect(chalk.sgr(chalk.s['#CC6600']('Orange')))
-      .toBe('␛[38;2;204;102;0mOrange␛[0m');
+      .toBe('␛[38;2;204;102;0mOrange␛[m');
   })
   
   it('Oranger Text II', () => {
     expect(chalk.sgr(chalk.s['#C60']('Orange')))
-      .toBe('␛[38;2;204;102;0mOrange␛[0m');
+      .toBe('␛[38;2;204;102;0mOrange␛[m');
   })
   
   it('Red Text Underlined I', () => {
     expect(chalk.sgr(chalk.underline.red('Red')))
-      .toBe('␛[4;31mRed␛[0m');
+      .toBe('␛[4;31mRed␛[m');
   })
 
   it('Red Text Underlined II', () => {
     expect(chalk.sgr(chalk.red.underline('Red')))
-      .toBe('␛[4;31mRed␛[0m');
+      .toBe('␛[4;31mRed␛[m');
   })
 
   it('Underlined Text Partly Red', () => {
     expect(chalk.sgr(chalk.underline('Die '+chalk.red('Red')+' Farbe')))
-      .toBe('␛[4mDie ␛[31mRed␛[39m Farbe␛[0m');
+      .toBe('␛[4mDie ␛[31mRed␛[39m Farbe␛[m');
   })
 
   it('Red Text Partly Underlined', () => {
     expect(chalk.sgr(chalk.red('Die '+chalk.underline('Red')+' Farbe')))
-      .toBe('␛[31mDie ␛[4mRed␛[24m Farbe␛[0m');
+      .toBe('␛[31mDie ␛[4mRed␛[24m Farbe␛[m');
   })
 
   it('Red Text Partly Bold', () => {
     expect(chalk.sgr(chalk.red('Die '+chalk.bold('Red')+' Farbe')))
-      .toBe('␛[31mDie ␛[1mRed␛[22m Farbe␛[0m');
+      .toBe('␛[31mDie ␛[1mRed␛[22m Farbe␛[m');
   })
   it('Green Background', () => {
     expect(chalk.sgr(chalk.bgGreen('Green')))
-      .toBe('␛[42mGreen␛[0m');
+      .toBe('␛[42mGreen␛[m');
   })
 
 })

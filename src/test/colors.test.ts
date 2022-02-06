@@ -54,22 +54,22 @@ describe('Formating With Color Level 1 ...', () => {
   
     it('Red Text', () => {
         expect(cs.s.sgr(cs.s.red('Red')))
-            .toBe('␛[31mRed␛[0m');
+            .toBe('␛[31mRed␛[m');
     })
     
     it('Orange Text I', () => {
         expect(cs.s.sgr(cs.s['#CC6600']('Orange')))
-            .toBe('␛[91mOrange␛[0m');
+            .toBe('␛[91mOrange␛[m');
     })
 
     it('Red Background', () => {
         expect(cs.s.sgr(cs.s.bg.red('Red')))
-            .toBe('␛[41mRed␛[0m');
+            .toBe('␛[41mRed␛[m');
     })
     
     it('Orange Background', () => {
         expect(cs.s.sgr(cs.s.bg['#CC6600']('Orange')))
-            .toBe('␛[101mOrange␛[0m');
+            .toBe('␛[101mOrange␛[m');
     })
 
     it('Visible', () => {
@@ -90,22 +90,22 @@ describe('Formating With Color Level 2 ...', () => {
   
     it('Red Text', () => {
         expect(cs.s.sgr(cs.s.red('Red')))
-            .toBe('␛[31mRed␛[0m');
+            .toBe('␛[31mRed␛[m');
     })
     
     it('Orange Text', () => {
         expect(cs.s.sgr(cs.s['#CC6600']('Orange')))
-          .toBe('␛[38;5;172mOrange␛[0m');
+          .toBe('␛[38;5;172mOrange␛[m');
     })
 
     it('Red Background', () => {
         expect(cs.s.sgr(cs.s.bg.red('Red')))
-            .toBe('␛[41mRed␛[0m');
+            .toBe('␛[41mRed␛[m');
     })
 
     it('Orange Background', () => {
         expect(cs.s.sgr(cs.s.bg['#CC6600']('Orange')))
-            .toBe('␛[48;5;172mOrange␛[0m');
+            .toBe('␛[48;5;172mOrange␛[m');
     })
 
     it('Visible', () => {
@@ -126,22 +126,22 @@ describe('Formating With Color Level 3 ...', () => {
   
     it('Red Text', () => {
         expect(cs.s.sgr(cs.s.red('Red')))
-            .toBe('␛[31mRed␛[0m');
+            .toBe('␛[31mRed␛[m');
     })
     
     it('Orange Text', () => {
         expect(cs.s.sgr(cs.s['#CC6600']('Orange')))
-            .toBe('␛[38;2;204;102;0mOrange␛[0m');
+            .toBe('␛[38;2;204;102;0mOrange␛[m');
     })
 
     it('Red Background', () => {
         expect(cs.s.sgr(cs.s.bg.red('Red')))
-            .toBe('␛[41mRed␛[0m');
+            .toBe('␛[41mRed␛[m');
     })
 
     it('Orange Background', () => {
         expect(cs.s.sgr(cs.s.bg['#CC6600']('Orange')))
-            .toBe('␛[48;2;204;102;0mOrange␛[0m');
+            .toBe('␛[48;2;204;102;0mOrange␛[m');
     })
 
     it('Visible', () => {
