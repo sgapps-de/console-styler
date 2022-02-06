@@ -26,7 +26,7 @@ describe('Formating with cs.s ...', () => {
       .toBe('␛[38;2;204;102;0mOrange␛[0m');
   })
   
-  it('Oranger Text II', () => {
+  it('Orange Text II', () => {
     expect(cs.s.sgr(cs.s['#C60']('Orange')))
       .toBe('␛[38;2;204;102;0mOrange␛[0m');
   })
