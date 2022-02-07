@@ -63,12 +63,11 @@ export const ANSI_RESET_SETTINGS: Settings = { fg: '39', bg: '39', ms: 0, mm: 0,
 export const ANSI_SGR_REGEXP = /\x1B\[([0-9;]*)m/
 
 const escSeqCache      = new Map<string,Settings>();
-const escSeqCacheFinal = new Map<string,Settings>();
 
 // export function escSeqMatch2Settings(match: RegExpExecArray, ff: boolean = false): Settings {
-export function sgrPars2Settings(seqPars: string, ff: boolean = false, mx: Modifier = Modifier.STANDARD): Settings {
+export function sgrPars2Settings(seqPars: string, mx: Modifier = Modifier.STANDARD): Settings {
 
-    let ss = ff ? escSeqCacheFinal.get(seqPars) : escSeqCache.get(seqPars);
+    let ss = escSeqCache.get(seqPars);
     if (ss) return ss;
 
     let ms: number = 0;
@@ -251,8 +250,7 @@ export function sgrPars2Settings(seqPars: string, ff: boolean = false, mx: Modif
 
     ss={ fg, bg, ms, mm, mr };
 
-    if (ff) escSeqCacheFinal.set(seqPars,ss);
-    else    escSeqCache.set(seqPars,ss);
+    escSeqCache.set(seqPars,ss);
     
     return ss;
 }
@@ -444,12 +442,11 @@ export function sqrSplit(s: string, as?: State, mx: Modifier = Modifier.STANDARD
     else {
         let ss: StateStringParts = []
         let r: string = s;
-        const ff = (as.ms & Modifier.FINAL)>0;
         for (;;) {
             const m = ANSI_SGR_REGEXP.exec(r);
             if (!m) break;
             if (m.index>0) ss.push(as,r.slice(0,m.index));
-            as=stateUpdate(as,sgrPars2Settings(m[1] ?? '0',ff,mx));
+            as=stateUpdate(as,sgrPars2Settings(m[1] ?? '0',mx));
             r=r.slice(m.index+m[0].length);
         }
         if (r) ss.push(as,r);
