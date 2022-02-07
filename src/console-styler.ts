@@ -13,6 +13,8 @@ import  { EnvironmentOptions, CommandOptions,
           envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
         } from './command-info';
 
+import { ConsoleStylerSetupTheme, ConsoleStylerThemeOptions } from './theme';
+
 export type ConsoleStyleFunction = (s: string | StateStringList, cs: ConsoleStyler) => string | StateStringList;
 export type ConsoleStyleStringFunction = (s: string) => string;
 export type ConsoleStyleListFunction = (s: StateStringList) => StateStringList;
@@ -170,12 +172,16 @@ export interface ConsoleStylerOptions {
 
     multiFmt?:    boolean,
 
+    delimiter?:   RegExp | [ string, string, string] | [string, string],
+
     env?:         EnvironmentOptions,
     cmdOpts?:     CommandOptions,
 
     alias?:     { [key: string]: ConsoleStyle | string },
     ctrlStyle?: { [key: string]: ConsoleStyle | string },
     ctrlName?:  { [key: string]: ControlName },
+
+    theme?:       ConsoleStylerThemeOptions,
 }
 
 const CONSOLE_STYLE_COLORS: [string, number][] = [
@@ -379,13 +385,15 @@ export class ConsoleStyler {
         this._ctrlName={ '\n': '\\n', '\r': '\\r',  '?': this._ctrlNameStd };
         this._ctrlNameCache={};
 
-        this.setFormat(['{{','}}','|']);
+        this.setFormat(opts.delimiter ?? ['{{','}}','|']);
 
         for(const n of CONSOLE_STYLER_BIND) (this as any)[n]=(this as any)[n].bind(this);
 
         if (opts.alias) this.alias(opts.alias);
         if (opts.ctrlStyle) this.ctrlStyle(opts.ctrlStyle);
         if (opts.ctrlName) this.ctrlName(opts.ctrlName);
+
+        if (opts.theme) ConsoleStylerSetupTheme(this,opts);
     }
 
     f(... sx: any[]): string {
@@ -675,7 +683,7 @@ export class ConsoleStyler {
             else if (n.charAt(0)==='%')
                 sx=this._c16Settings(n);
             else if (/[0-9;]+/.test(n))
-                sx=sgrPars2Settings(n,true);
+                sx=sgrPars2Settings(n,this.modifier);
             else
                 throw Error(`unknown console style '${n}'`)
 
