@@ -79,6 +79,9 @@ export type ConsoleStyle = {
     rgb:   (r: number, g: number, b: number) => ConsoleStyle,
     bgRgb: (r: number, g: number, b: number) => ConsoleStyle,
 
+    ansi256:   (c: number) => ConsoleStyle,
+    bgAnsi256: (c: number) => ConsoleStyle,
+
     a: ConsoleStyles,
 
     final: ConsoleStyle;
@@ -227,6 +230,8 @@ export class ConsoleStyler {
     bgHex: (hx: string) => ConsoleStyle;
     rgb: (r: number, g: number, b: number) => ConsoleStyle;
     bgRgb: (r: number, g: number, b: number) => ConsoleStyle;
+    ansi256: (c: number) => ConsoleStyle;
+    bgAnsi256: (c: number) => ConsoleStyle;
 
     black!: ConsoleStyle;
     red!: ConsoleStyle;
@@ -342,12 +347,16 @@ export class ConsoleStyler {
             bgHex: this._hexFactory.bind(this,true),
             rgb: this._rgbFactory.bind(this,false),
             bgRgb: this._rgbFactory.bind(this,true),
+            ansi256: this._ansi256Factory.bind(this,false),
+            bgAnsi256: this._ansi256Factory.bind(this,true),
         };
 
         this.hex=this._hexFunction.bind(this,ANSI_NO_SETTINGS,false);
         this.bgHex=this._hexFunction.bind(this,ANSI_NO_SETTINGS,true);
         this.rgb=this._rgbFunction.bind(this,ANSI_NO_SETTINGS,false);
         this.bgRgb=this._rgbFunction.bind(this,ANSI_NO_SETTINGS,true);
+        this.ansi256=this._ansi256Function.bind(this,ANSI_NO_SETTINGS,false);
+        this.bgAnsi256=this._ansi256Function.bind(this,ANSI_NO_SETTINGS,true);
 
         (this as any)['none']=sd.styles['none']=sd._emptyStyle;
         this._styleCache.set(this._settingsName(ANSI_NO_SETTINGS),sd._emptyStyle);
@@ -1070,4 +1079,22 @@ export class ConsoleStyler {
 
         return this._rgbFunction.bind(this,ss,bf) as unknown as ConsoleStyle;
     }
+
+    protected _ansi256Function(ss: ConsoleStyleSettings, bf: boolean, c: number): ConsoleStyle {
+
+        const sc =  bf ?
+                        this._colorSettings(undefined,Colors.sgrFromC256(c,true))
+                    :
+                        this._colorSettings(Colors.sgrFromC256(c,false),undefined);
+
+        ss=this._settingsOverwrite(ss,sc);
+
+        return this._settingsStyle(ss);
+    }
+
+    protected _ansi256Factory(bf: boolean, nn: string, ss: ConsoleStyleSettings): ConsoleStyle {
+
+        return this._ansi256Function.bind(this,ss,bf) as unknown as ConsoleStyle;
+    }
+
 }

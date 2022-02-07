@@ -36,6 +36,16 @@ describe('Formating with cs.s ...', () => {
       .toBe('␛[38;2;204;102;0mOrange␛[m');
   })
   
+  it('Orange Text IV', () => {
+    expect(cs.a.sgr(cs.ansi256(172)('Orange')))
+      .toBe('␛[38;5;172mOrange␛[m');
+  })
+  
+  it('Orange Text V', () => {
+    expect(cs.a.sgr(cs.rgb(204,102,0)('Orange')))
+      .toBe('␛[38;2;204;102;0mOrange␛[m');
+  })
+  
   it('Red Text Underlined I', () => {
     expect(cs.a.sgr(cs.a.underline.red('Red')))
       .toBe('␛[4;31mRed␛[m');
@@ -109,6 +119,16 @@ describe('Formating with cs.s ...', () => {
   it('Orange Background IV', () => {
     expect(cs.a.sgr(cs.bg.rgb(204,102,0)('Orange')))
       .toBe('␛[48;2;204;102;0mOrange␛[m');
+  })
+
+  it('Orange Background V', () => {
+    expect(cs.a.sgr(cs.bgAnsi256(172)('Orange')))
+      .toBe('␛[48;5;172mOrange␛[m');
+  })
+
+  it('Orange Background VI', () => {
+    expect(cs.a.sgr(cs.bg.ansi256(172)('Orange')))
+      .toBe('␛[48;5;172mOrange␛[m');
   })
 
 })

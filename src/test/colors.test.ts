@@ -26,6 +26,11 @@ describe('Formating With Color Level 0 ...', () => {
             .toBe('Orange');
     })
 
+    it('Orange Text II', () => {
+        expect(cs.a.sgr(cs.ansi256(172)('Orange')))
+            .toBe('Orange');
+    })
+
     it('Red Background', () => {
         expect(cs.a.sgr(cs.a.bg.red('Red')))
             .toBe('Red');
@@ -62,6 +67,11 @@ describe('Formating With Color Level 1 ...', () => {
             .toBe('␛[91mOrange␛[m');
     })
 
+    it('Orange Text II', () => {
+        expect(cs.a.sgr(cs.ansi256(172)('Orange')))
+            .toBe('␛[91mOrange␛[m');
+    })
+
     it('Red Background', () => {
         expect(cs.a.sgr(cs.a.bg.red('Red')))
             .toBe('␛[41mRed␛[m');
@@ -93,9 +103,14 @@ describe('Formating With Color Level 2 ...', () => {
             .toBe('␛[31mRed␛[m');
     })
     
-    it('Orange Text', () => {
+    it('Orange Text I', () => {
         expect(cs.a.sgr(cs.a['#CC6600']('Orange')))
           .toBe('␛[38;5;172mOrange␛[m');
+    })
+
+    it('Orange Text II', () => {
+        expect(cs.a.sgr(cs.ansi256(172)('Orange')))
+            .toBe('␛[38;5;172mOrange␛[m');
     })
 
     it('Red Background', () => {
@@ -129,9 +144,14 @@ describe('Formating With Color Level 3 ...', () => {
             .toBe('␛[31mRed␛[m');
     })
     
-    it('Orange Text', () => {
+    it('Orange Text I', () => {
         expect(cs.a.sgr(cs.a['#CC6600']('Orange')))
             .toBe('␛[38;2;204;102;0mOrange␛[m');
+    })
+
+    it('Orange Text II', () => {
+        expect(cs.a.sgr(cs.ansi256(172)('Orange')))
+            .toBe('␛[38;5;172mOrange␛[m');
     })
 
     it('Red Background', () => {
