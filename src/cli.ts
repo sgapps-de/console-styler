@@ -46,19 +46,115 @@ console.log(a.toString())
 
 */
 
-import { ConsoleStyler, ConsoleStyle } from './console-styler'
+// type ChalkerFunction = (... args: unknown[]) =>  string;
 
-let cs = new ConsoleStyler({});
+// type ChalkerStyles = { [key: string] : ChalkerStyle }
+// type ChalkerProps = {
+//     fmt: (... args: unknown[]) =>  string;
+//     alias: (n: string, sx: any) => void;
+// }
+
+// type ChalkerStyle = ChalkerStyles & ChalkerFunction & ChalkerProps;
+
+// let x: ChalkerStyle = {} as unknown as ChalkerStyle;
+
+// let s: string = x.fmt('Emil');
+
+
+import { ConsoleStyler, ConsoleStyle } from './console-styler'
+import { Modifier } from './state'
+import util from 'util';
+
+const CTRL_NAMES : { [key: string]: string }= {
+    '\r': '\\r', 
+    '\n': '\\n', 
+    '\x1B': '␛', 
+}  
+
+const CTRL_STYLES = {
+    'sgr': 'bgRed.white',
+    '?': 'bgGreen.white',
+}
+
+function showSGR(r: string) {
+
+   return r.replace(/\x1B(\[[0-9;]*m)/g,'\x1B[4;31m€$1\x1B[0m');
+}
+
+// let cs = new ConsoleStyler({ level:3, not: true, ctrlName: CTRL_NAMES, ctrlStyle: CTRL_STYLES });
+let cs = new ConsoleStyler({ term: 'windows-terminal', modifier: Modifier.DEFAULT, ctrlName: CTRL_NAMES, ctrlStyle: CTRL_STYLES });
 let s1: string;
 
-let css = { 'SGR': cs.s.red, '\n': cs.s.blue, '?': cs.s.green };
-// let css = { '\n': cs.s.blue, '?': cs.s.green };
+cs.alias('ru','red.underline');
+s1=cs.f('{{ru|Silvan}}');
+console.log(s1);
+console.log(showSGR(s1));
 
-console.log(cs.showControl('ABC',css));
-console.log(cs.showControl('ABC\nDEF',css));
-console.log(cs.showControl('\x1B[32mABC\nDEF\x1B[m',css));
-console.log(cs.showControl('123\x1B[32mABC\nDEF\x1B[m',css));
-console.log(cs.showControl('123\x07ABC\nDEF\x07GHI',css));
+// let redUnderline = cs.red.underline;
+// s1=redUnderline('Silvan');
+// console.log(s1);
+// console.log(showSGR(s1));
+
+// const CSF = cs.t;
+// s1=CSF`{{red|${'Silvan'}}} {{blue|${'Greverus'}}}${'!'}`
+// console.log(s1);
+// console.log(showSGR(s1));
+// s1=cs.s.underline('Die '+s1+' Farbe')
+// console.log(s1);
+// console.log(showSGR(s1));
+
+// s1=cs.f('{{blue|Das {{bold|blaue}} Wunder}}');
+// console.log(s1);
+// console.log(cs.s.ctrl(s1));
+
+// s1=cs.s.bg['#CC6600']('Red');
+// console.log(s1);
+// console.log(cs.s.ctrl(s1));
+
+// s1=cs.red('Red');
+// console.log(s1);
+// console.log(cs.s.ctrl(s1));
+
+// s1=cs.s.bg.green('Green');
+// console.log(s1);
+// console.log(cs.s.ctrl(s1));
+
+// s1=cs.f('{{!underline|Silvan}}')
+// console.log(s1);
+// console.log(cs.s.ctrl(s1));
+
+// s1=cs.s.underline('Hallo '+s1+' Greverus')
+// console.log(s1);
+// console.log(cs.s.ctrl(s1));
+
+// s1=cs.f('{{underline|Hallo {{!underline|Silvan}} Greverus')
+// console.log(s1);
+// console.log(cs.s.ctrl(s1));
+
+// console.log(cs.s.sgr(cs.f('SGR:  {{red|Silvan}}!')));
+
+
+// console.log(cs.s.sgr(cs.f('SGR:  {{red|Silvan}}!')));
+// cs.ctrlStyle('sgr',cs.s.red.underline);
+// console.log(cs.s.sgr(cs.f('SGR:  {{red|Silvan}}!')));
+// console.log(cs.s.ctrl(cs.f('CTRL: {{red|Silvan}}!')));
+// cs.ctrlStyle('?',cs.s.bgGreen.white);
+// console.log(cs.s.ctrl(cs.f('CTRL: {{red|Silvan}} Greverus\nMünchen')));
+// cs.ctrlStyle('sgr');
+// console.log(cs.s.sgr(cs.f('SGR:  {{red|Silvan}}!')));
+// console.log(cs.s.ctrl(cs.f('CTRL: {{red|Silvan}}!')));
+// console.log(cs.s.sgr(cs.f('SGR:  {{red|Silvan}} Greverus\nMünchen')));
+// console.log(cs.s.ctrl(cs.f('CTRL: {{red|Silvan}} Greverus\nMünchen')));
+
+// console.log(cs.f('Hallo {{red|Silvan}}!'))
+// console.log(cs.showEscape(cs.f('{{underline|Die {{red|ro{{bold|te}}}} Farbe}}')));
+
+// console.log(cs.s.red.upper.ul('Silvan'));
+// console.log(cs.f('Hallo {{upper|Silvan}} Greverus'));
+// console.log(cs.f('{{ul|Hallo {{red.upper|Silvan}} Greverus}}'));
+// console.log(cs.s.sgr(cs.f('{{ul|Hallo {{red.upper|Silvan}} Greverus}}')));
+// console.log(cs.f('{{sgr|{{ul|Hallo {{red.upper|Silvan}} Greverus}}}}'));
+// console.log(cs.f('{{ul.sgr|Hallo {{red.upper|Silvan}} Greverus}}'));
 
 // console.log(cs.s.red('Silvan'))
 // console.log(cs.s.underline('Silvan'))

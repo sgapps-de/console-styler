@@ -1,74 +1,100 @@
 {
-  "name": "console-styler",
-  "version": "0.0.0",
-  "description": "A Styler for Console Output",
-  "keywords": [
-    "styling",
-    "console"
-  ],
-  "main": "lib/console-styler.js",
-  "types": "lib/console-styler.d.ts",
-  "files": [
-    "lib"
-  ],
-  "author": "sgapps.de <>",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sgapps-de/console-styler"
-  },
-  "license": "MIT",
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "scripts": {
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint --fix 'src/**/*.ts'",
-    "prebuild": "rimraf lib",
-    "build": "tsc --project tsconfig.build.json",
-    "build:docs": "typedoc --out docs src/console-styler.ts",
-    "test": "jest --config jest.config.ts",
-    "test:cover": "jest --config jest.config.ts --coverage",
-    "test:prod": "npm run lint && npm run test -- --no-cache",
-    "cli": "tsc-check && node lib/cli.js",
-    "bench:1": "tsc-check && node lib/bench/bench1.js",
-    "bench:2": "tsc-check && node lib/bench/bench2.js",
-    "bench:3": "tsc-check && node lib/bench/bench3.js",
-    "bench:4": "tsc-check && node lib/bench/bench4.js"
-  },
-  "lint-staged": {
-    "{src,test}/**/*.ts": [
-      "eslint --fix"
-    ]
-  },
-  "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ]
-  },
-  "devDependencies": {
-    "@commitlint/cli": "14.1.0",
-    "@commitlint/config-conventional": "14.1.0",
-    "@types/benchmark": "^2.1.1",
-    "@types/jest": "27.0.2",
-    "@types/node": "^16.11.7",
-    "@typescript-eslint/eslint-plugin": "^5.3.1",
-    "@typescript-eslint/parser": "^5.3.1",
-    "benny": "^3.7.1",
-    "chalk": "^4.1.2",
-    "eslint": "^8.2.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^4.0.0",
-    "eslint-plugin-simple-import-sort": "^7.0.0",
-    "husky": "^7.0.4",
-    "jest": "27.3.1",
-    "jest-config": "27.3.1",
-    "lint-staged": "^11.2.6",
-    "prettier": "^2.4.1",
-    "rimraf": "^3.0.2",
-    "semantic-release": "^18.0.0",
-    "ts-jest": "^27.0.7",
-    "ts-node": "^10.4.0",
-    "typedoc": "^0.22.8",
-    "typescript": "^4.4.4"
-  }
+    "name": "console-styler",
+    "version": "0.0.0",
+    "description": "A Styler for Console Output",
+    "keywords": [
+        "styling",
+        "console"
+    ],
+    "author": "sgapps.de <webmaster@sgapps.de>",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sgapps-de/console-styler"
+    },
+    "license": "MIT",
+    "main": "dist/node/cjs/console-styler.js",
+    "types": "dist/types/console-styler.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/node/esm/console-styler.js",
+            "require": "./dist/node/cjs/console-styler.js"
+        }
+    },
+    "files": [
+        "dist/**/package.json",
+        "dist/**/*.js",
+        "dist/types/**/*.d.ts",
+        "!dist/**/test/*"
+    ],
+    "engines": {
+        "node": ">=14.0.0"
+    },
+    "scripts": {
+        "build": "run-s build:node build:types",
+        "build-tsc": "tsc",
+        "build-ejs": "ejs",
+        "build:node": "run-s build:node:*",
+        "build:node:cjs": "run-s clean:node:cjs \"build-tsc -- -p ./tsconfig/node-cjs.json\"",
+        "build:node:esm": "run-s clean:node:esm \"build-tsc -- -p ./tsconfig/node-esm.json\" \"build-ejs -- ./build/package.esm.json.ejs -o ./dist/node/esm/package.json\" ",
+        "build:types": "run-s \"build-tsc -- -p ./tsconfig/types.json\"",
+        "build:docs": "typedoc --out docs src/console-styler.ts",
+        "clean": "rimraf dist",
+        "clean:node": "rimraf dist/node",
+        "clean:node:cjs": "rimraf dist/node/cjs",
+        "clean:node:esm": "rimraf dist/node/esm",
+        "lint": "eslint src/**/*.ts",
+        "lint:fix": "eslint --fix 'src/**/*.ts'",
+        "test": "jest --config jest/config.ts",
+        "test:build": "run-s test:build:node:*",
+        "test:build:node:cjs": "jest --config jest/config.cjs.ts",
+        "test:build:node:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 jest --config jest/config.esm.ts",
+        "build-test": "run-s build test:build",
+        "test:cover": "jest --config jest/config.ts --coverage",
+        "test:prod": "npm run lint && npm run test -- --no-cache",
+        "cli": "tsc-check && node lib/cli.js",
+        "bench:1": "tsc-check && node lib/bench/bench1.js",
+        "bench:2": "tsc-check && node lib/bench/bench2.js",
+        "bench:3": "tsc-check && node lib/bench/bench3.js",
+        "bench:4": "tsc-check && node lib/bench/bench4.js"
+    },
+    "lint-staged": {
+        "{src,test}/**/*.ts": [
+            "eslint --fix"
+        ]
+    },
+    "commitlint": {
+        "extends": [
+            "@commitlint/config-conventional"
+        ]
+    },
+    "devDependencies": {
+        "@commitlint/cli": "14.1.0",
+        "@commitlint/config-conventional": "14.1.0",
+        "@types/benchmark": "^2.1.1",
+        "@types/jest": "27.0.2",
+        "@types/node": "^16.11.7",
+        "@typescript-eslint/eslint-plugin": "^5.3.1",
+        "@typescript-eslint/parser": "^5.3.1",
+        "benny": "^3.7.1",
+        "chalk": "^4.1.2",
+        "cross-env": "^7.0.3",
+        "ejs": "^3.1.6",
+        "eslint": "^8.2.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-prettier": "^4.0.0",
+        "eslint-plugin-simple-import-sort": "^7.0.0",
+        "husky": "^7.0.4",
+        "jest": "27.3.1",
+        "jest-config": "27.3.1",
+        "lint-staged": "^11.2.6",
+        "npm-run-all": "^4.1.5",
+        "prettier": "^2.4.1",
+        "rimraf": "^3.0.2",
+        "run-script-os": "^1.1.6",
+        "semantic-release": "^18.0.0",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.4.0",
+        "typedoc": "^0.22.8",
+        "typescript": "^4.4.4"
+    }
 }

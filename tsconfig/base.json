@@ -1,0 +1,18 @@
+{
+  "files": [
+    "../src/console-styler.ts"
+  ],
+  "include": [
+    "../src/test/*.ts"
+  ],
+  "compilerOptions": {
+    "lib": ["ES6", "DOM"],
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "sourceMap": false,
+    "removeComments": true
+  }
+}
