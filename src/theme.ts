@@ -1,4 +1,4 @@
-import fs from 'fs';
+import * as fs from 'fs';
 import { ConsoleStyler, ConsoleStylerOptions } from './console-styler'
 import  { EnvironmentOptions, CommandOptions, 
           envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter

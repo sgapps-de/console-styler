@@ -1,4 +1,4 @@
-import os from 'os';
+import * as os from 'os';
 
 import  { EnvironmentOptions, CommandOptions, 
          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
