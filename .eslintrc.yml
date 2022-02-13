@@ -1,15 +1,22 @@
 parser: '@typescript-eslint/parser'
-extends:
-  - plugin:@typescript-eslint/recommended
-  - plugin:prettier/recommended
 
 plugins:
-  - simple-import-sort
+  - "@typescript-eslint"
 
 parserOptions:
   ecmaVersion: 2018
   sourceType: module
 
+extends:
+  eslint:recommended
+
 rules:
-  simple-import-sort/imports: error
-  simple-import-sort/exports: error
+  no-multi-spaces: off
+  semi: error
+  no-undef: off
+  no-control-regex: off
+  no-cond-assign: off
+  no-unused-vars: off
+  "@typescript-eslint/no-unused-vars":
+    - error
+    - args: none
