@@ -56,19 +56,7 @@
         "bench:3": "tsc-check && node lib/bench/bench3.js",
         "bench:4": "tsc-check && node lib/bench/bench4.js"
     },
-    "lint-staged": {
-        "{src,test}/**/*.ts": [
-            "eslint --fix"
-        ]
-    },
-    "commitlint": {
-        "extends": [
-            "@commitlint/config-conventional"
-        ]
-    },
     "devDependencies": {
-        "@commitlint/cli": "14.1.0",
-        "@commitlint/config-conventional": "14.1.0",
         "@types/benchmark": "^2.1.1",
         "@types/jest": "27.0.2",
         "@types/node": "^16.11.7",
@@ -85,9 +73,7 @@
         "husky": "^7.0.4",
         "jest": "27.3.1",
         "jest-config": "27.3.1",
-        "lint-staged": "^11.2.6",
         "npm-run-all": "^4.1.5",
-        "prettier": "^2.4.1",
         "rimraf": "^3.0.2",
         "run-script-os": "^1.1.6",
         "semantic-release": "^18.0.0",
