@@ -43,7 +43,6 @@
         "clean:node:cjs": "rimraf dist/node/cjs",
         "clean:node:esm": "rimraf dist/node/esm",
         "lint": "eslint src/**/*.ts",
-        "lint:fix": "eslint --fix 'src/**/*.ts'",
         "test": "jest --config jest/config.ts",
         "test:build": "run-s test:build:node:*",
         "test:build:node:cjs": "jest --config jest/config.cjs.ts",
