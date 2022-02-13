@@ -1,4 +1,4 @@
-import { ConsoleStyler } from './console-styler'
+import { ConsoleStyler } from './console-styler';
 import * as Colors from './colors';
 
 export enum Modifier {
@@ -33,7 +33,7 @@ export enum Modifier {
     RESET            = STANDARD,
 
     ALL              = STANDARD | SPECIAL
-};
+}
 
 export interface ModifierSettings {
 
@@ -48,8 +48,8 @@ export interface State extends ModifierSettings {
     bg?: string;
 }
 
-export const ANSI_NO_STATE:           State = { ms: 0, mm: 0, mr: 0 }
-export const ANSI_NO_STATE_FINAL:     State = { ms: Modifier.FINAL, mm: Modifier.FINAL, mr: 0 }
+export const ANSI_NO_STATE:           State = { ms: 0, mm: 0, mr: 0 };
+export const ANSI_NO_STATE_FINAL:     State = { ms: Modifier.FINAL, mm: Modifier.FINAL, mr: 0 };
 
 export interface Settings extends ModifierSettings {
 
@@ -57,10 +57,10 @@ export interface Settings extends ModifierSettings {
     bg?: string;
 }
 
-export const ANSI_NO_SETTINGS: Settings = { ms: 0, mm: 0, mr: 0 }
-export const ANSI_RESET_SETTINGS: Settings = { fg: '39', bg: '39', ms: 0, mm: 0, mr: Modifier.STANDARD }
+export const ANSI_NO_SETTINGS: Settings = { ms: 0, mm: 0, mr: 0 };
+export const ANSI_RESET_SETTINGS: Settings = { fg: '39', bg: '39', ms: 0, mm: 0, mr: Modifier.STANDARD };
 
-export const ANSI_SGR_REGEXP = /\x1B\[([0-9;]*)m/
+export const ANSI_SGR_REGEXP = /\x1B\[([0-9;]*)m/;
 
 const escSeqCache      = new Map<string,Settings>();
 
@@ -76,8 +76,7 @@ export function sgrPars2Settings(seqPars: string, mx: Modifier = Modifier.STANDA
     let fg: string | undefined;
     let bg: string | undefined;
 
-//  const cc = (match[1] ?? '0').split(';').map(x => Number(x))
-    const cc = seqPars.split(';').map(x => Number(x))
+    const cc = seqPars.split(';').map(x => Number(x));
 
     let i,c: number;
     for (i=0;i<cc.length;++i) {
@@ -201,11 +200,11 @@ export function sgrPars2Settings(seqPars: string, mx: Modifier = Modifier.STANDA
                 break;
             case 38:
                 if (cc[i+1]===2) {
-                    fg=`38;2;${cc[i+2]};${cc[i+3]};${cc[i+4]}`
+                    fg=`38;2;${cc[i+2]};${cc[i+3]};${cc[i+4]}`;
                     i+=4;
                 }
                 else {
-                    fg=`38;5;${cc[i+2]}`
+                    fg=`38;5;${cc[i+2]}`;
                     i+=2;
                 }
                 break;
@@ -230,11 +229,11 @@ export function sgrPars2Settings(seqPars: string, mx: Modifier = Modifier.STANDA
                 break;
             case 48:
                 if (cc[i+1]===2) {
-                    bg=`48;2;${cc[i+2]};${cc[i+3]};${cc[i+4]}`
+                    bg=`48;2;${cc[i+2]};${cc[i+3]};${cc[i+4]}`;
                     i+=4;
                 }
                 else {
-                    bg=`48;5;${cc[i+2]}`
+                    bg=`48;5;${cc[i+2]}`;
                     i+=2;
                 }
                 break;
@@ -308,7 +307,7 @@ export function settingsUpdate(s1: Settings, s2: Settings): Settings {
     if (s2.fg && (!s.fg || s.fg==='39')) s.fg=s2.fg;
     if (s2.bg && (!s.bg || s.bg==='49')) s.bg=s2.bg;
 
-    const mm = (s2.mm & (~s.mm | ~s.ms))
+    const mm = (s2.mm & (~s.mm | ~s.ms));
 
     s.mm=s.mm | mm;
     s.ms=(s.ms & ~mm) | (s2.ms & mm);
@@ -349,14 +348,14 @@ export function stateApply(s: State, ss: Settings): State {
         if (ss.fg && ss.fg!=='39') sr.fg=ss.fg;
     }
     else if (ss.fg!=='39') {
-        sr.fg=s.fg
+        sr.fg=s.fg;
     }
 
     if (!s.bg) {
         if (ss.bg && ss.bg!=='49') sr.bg=ss.bg;
     }
     else if (ss.bg!=='49') {
-        sr.bg=s.bg
+        sr.bg=s.bg;
     }
 
     return sr;
@@ -389,12 +388,12 @@ export function stateShow(s: State | Settings): string {
     let r:  string = '{';
     let rs: string = '';
 
-    if (s.fg) { r=r+rs+"fg:'"+s.fg+"'"; rs=',' }
-    if (s.bg) { r=r+rs+"bg:'"+s.bg+"'"; rs=',' }
+    if (s.fg) { r=r+rs+"fg:'"+s.fg+"'"; rs=','; }
+    if (s.bg) { r=r+rs+"bg:'"+s.bg+"'"; rs=','; }
 
-    if (s.ms) { r=r+rs+'ms:'+stateModifiersShow(s.ms); rs=',' };
-    if (s.mm) { r=r+rs+'mm:'+stateModifiersShow(s.mm); rs=',' };
-    if (s.mr) { r=r+rs+'mr:'+stateModifiersShow(s.mr); rs=',' };
+    if (s.ms) { r=r+rs+'ms:'+stateModifiersShow(s.ms); rs=','; }
+    if (s.mm) { r=r+rs+'mm:'+stateModifiersShow(s.mm); rs=','; }
+    if (s.mr) { r=r+rs+'mr:'+stateModifiersShow(s.mr); rs=','; }
 
     return r+'}';
 }
@@ -440,7 +439,7 @@ export function sqrSplit(s: string, as?: State, mx: Modifier = Modifier.STANDARD
         else   return [];
     }
     else {
-        let ss: StateStringParts = []
+        let ss: StateStringParts = [];
         let r: string = s;
         for (;;) {
             const m = ANSI_SGR_REGEXP.exec(r);
@@ -478,9 +477,9 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
                     sxx &= (~Modifier.BOLD_DIM);
                 }
                 else if (mx & Modifier.DOUBLE_UNDERLINE)
-                    sr += '22;'
+                    sr += '22;';
                 else
-                    sr += '21;'
+                    sr += '21;';
                 sx &= (~Modifier.BOLD_DIM);
                 break;
             case Modifier.UNDERLINE:
@@ -490,11 +489,11 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
                     sxx &= (~Modifier.ANY_UNDERLINE);
                 }
                 else if (ss.ms & Modifier.DOUBLE_UNDERLINE) {
-                    sr += '21;'
+                    sr += '21;';
                     sxx &= (~Modifier.ANY_UNDERLINE);
                 }
                 else
-                    sr += '24;'
+                    sr += '24;';
                 sx &= (~Modifier.ANY_UNDERLINE);
                 break;
             case Modifier.ITALIC:
@@ -520,7 +519,7 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
                     sxx &= (~Modifier.ANY_BLINK);
                 }
                 else
-                    sr += '25;'
+                    sr += '25;';
                 sx &= (~Modifier.ANY_BLINK);
                 break;
             case Modifier.OVERLINE:
@@ -535,22 +534,22 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
 
     if (ss.fg!==s.fg) {
         if (ss.fg)
-            sr=sr+ss.fg+';'
+            sr=sr+ss.fg+';';
         else if (s.fg)
-            sr=sr+'39;'
+            sr=sr+'39;';
     }
     if (ss.bg!==s.bg) {
         if (ss.bg)
-            sr=sr+ss.bg+';'
+            sr=sr+ss.bg+';';
         else if (s.bg)
-            sr=sr+'49;'
+            sr=sr+'49;';
     }
 
 //  console.log('Make:',ansiStateShow(s),'->',ansiStateShow(ss),'->',sr);
 
     if (sr && !ss.fg && !ss.bg && !(ss.mm & Modifier.STANDARD)) return '\x1B[m';
 
-    return sr ? '\x1B['+sr.slice(0,-1)+'m' : ''
+    return sr ? '\x1B['+sr.slice(0,-1)+'m' : '';
 }
 
 export class StateStringList {
@@ -567,8 +566,8 @@ export class StateStringList {
 
     showParts(): string {
 
-        let lx: string = '['
-        let ls: string = ''
+        let lx: string = '[';
+        let ls: string = '';
 
         for (const p of this.parts) {
             if (typeof p !== 'string') {
@@ -577,7 +576,7 @@ export class StateStringList {
             else {
                 lx=lx+ls+"'"+p+"'";
             }
-            ls=','
+            ls=',';
         }
 
         return lx+']';
@@ -613,7 +612,7 @@ export class StateStringList {
                     if (!m) break;
                     if (m[1]) { r=r+sgrMakeState(s,ss,mx)+m[1]; s=ss; }
                     r=r+sgrMakeState(s,ANSI_NO_STATE,mx)+m[2];
-                    s=ANSI_NO_STATE
+                    s=ANSI_NO_STATE;
                     x=m[3];
                 }
                 if (x) { r=r+sgrMakeState(s,ss,mx)+x; s=ss; }

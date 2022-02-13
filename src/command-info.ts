@@ -12,13 +12,13 @@ function splitGetter(f: (d:any, n: string) => any, d: any, n: string): any {
 
     if (n.indexOf(',')>=0) {
         for (const sn of n.split(',')) {
-            const v=f(undefined,sn)
+            const v=f(undefined,sn);
             if (v!==undefined) return v;
         }
         return d;
     }
 
-    return f(d,n)
+    return f(d,n);
 }
 
 function envObjectGetter(env: EnvironmentObject | typeof process.env, def: any, vn: string): string | undefined {
@@ -75,7 +75,7 @@ function optsFunctionGetter(opts: CommandOptionsFunction, def: boolean | undefin
     if (typeof ov === 'string' || typeof ov === 'boolean')
         return ov;
     else if (ov)
-        return (ov as any).toString();
+      return (ov as any).toString();
     else
         return def;
 }

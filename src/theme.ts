@@ -1,8 +1,6 @@
 import * as fs from 'fs';
-import { ConsoleStyler, ConsoleStylerOptions } from './console-styler'
-import  { EnvironmentOptions, CommandOptions, 
-          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
-        } from './command-info';
+import { ConsoleStyler, ConsoleStylerOptions } from './console-styler';
+import  { envGetter, EnvironmentGetter } from './command-info';
 
 export interface ConsoleStylerThemeOptions {
 

@@ -20,9 +20,9 @@ function sgrBrightSpecial(c: string) {
     const ca: number[] = c.split(';').map(x => parseInt(x));
 
     if (ca[1]===5)
-        return `${ca[0]};5;${c256Bright(ca[2])}`
+        return `${ca[0]};5;${c256Bright(ca[2])}`;
     else if (ca[1]===2) 
-        return `${ca[0]};2;${rgbBright(ca[2],ca[3],ca[4]).join(';')}`
+        return `${ca[0]};2;${rgbBright(ca[2],ca[3],ca[4]).join(';')}`;
     else
         return c;
 }
@@ -50,9 +50,9 @@ function sgrDarkSpecial(c: string) {
     const ca: number[] = c.split(';').map(x => parseInt(x));
 
     if (ca[1]===5)
-        return `${ca[0]};5;${c256Dark(ca[2])}`
+        return `${ca[0]};5;${c256Dark(ca[2])}`;
     else if (ca[1]===2) 
-        return `${ca[0]};2;${rgbDark(ca[2],ca[3],ca[4]).join(';')}`
+        return `${ca[0]};2;${rgbDark(ca[2],ca[3],ca[4]).join(';')}`;
     else
         return c;
 }
@@ -126,7 +126,7 @@ export function sgrTo256(c: string): string {
 
 export function sgrFromRgb(r: number, g: number, b: number, bg: boolean = false): string {
 
-    return `${bg ? 48 : 38};2;${r};${g};${b}`
+    return `${bg ? 48 : 38};2;${r};${g};${b}`;
 }
 
 export function sgrFromHex(hx: string, bg: boolean = false): string {
@@ -137,7 +137,7 @@ export function sgrFromHex(hx: string, bg: boolean = false): string {
 
 export function sgrFromC256(c: number, bg: boolean = false): string {
 
-    return `${bg ? 48 : 38};5;${c}`
+    return `${bg ? 48 : 38};5;${c}`;
 }
 
 export function sgrFromC16(c: number, bg: boolean = false): string {
@@ -170,7 +170,7 @@ export function c256ToRgb(c: number): [ number, number, number ] {
         return COLOR16_RGB[c];
     else if (c<232) {
         c-=16;
-        return [ 51*Math.floor(c/36), 51*(Math.floor(c/6)%6), 51*(c%6) ]
+        return [ 51*Math.floor(c/36), 51*(Math.floor(c/6)%6), 51*(c%6) ];
     }
     else {
         c=Math.min((c-232)*16,255);
@@ -278,7 +278,7 @@ export function hexToRgb(hx: string): [ number, number, number ] | null {
 
     let r,g,b: number;
 
-    hx=hx.replace(/[#\,]/g,'')
+    hx=hx.replace(/[#,]/g,'');
     if (hx.length===3) {
         r=parseInt(hx.slice(0,1),16); r=r*16+r;
         g=parseInt(hx.slice(1,2),16); g=g*16+g;

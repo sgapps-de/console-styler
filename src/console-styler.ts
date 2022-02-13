@@ -2,16 +2,14 @@ import * as util from 'util';
 
 import * as Colors from './colors';
 
+import  { EnvironmentOptions, CommandOptions } from './command-info';
+
 import { Modifier, State, Settings, StateStringList,
          ANSI_SGR_REGEXP, ANSI_NO_STATE, ANSI_NO_STATE_FINAL, ANSI_NO_SETTINGS,
-         sgrPars2Settings, settingsOverwrite, stateShow,
+         sgrPars2Settings, settingsOverwrite,
         } from './state';
 
-        import { TermInfo } from './terminfo';
-
-import  { EnvironmentOptions, CommandOptions, 
-          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
-        } from './command-info';
+import { TermInfo } from './terminfo';
 
 import { ConsoleStylerSetupTheme, ConsoleStylerThemeOptions } from './theme';
 
@@ -22,7 +20,7 @@ export type ConsoleStyleAliasFunction = ConsoleStyleFunction | ConsoleStyleStrin
 
 type ConsoleStyleSettingsList = (Settings | ConsoleStyleFunction)[];
 type ConsoleStyleSettings = Settings | ConsoleStyleSettingsList;
-type ConsoleStyleSpecialFactory = (nn: string, ss: ConsoleStyleSettings) => ConsoleStyle;;
+type ConsoleStyleSpecialFactory = (nn: string, ss: ConsoleStyleSettings) => ConsoleStyle;
 
 interface ConsoleStyleData {
 
@@ -47,7 +45,7 @@ const consoleStyleHandler = {
 
         throw Error('unexpected style assignement');
     }
-}
+};
 
 interface ConsoleStylesData {
 
@@ -68,7 +66,7 @@ const consoleStylesHandler = {
 
         throw Error('unexpected style assignement');
     }
-}
+};
 
 // export type ConsoleStyleFunction = (s: string | AnsiString) => typeof s;
 export type ConsoleStyles        = { [key: string] : ConsoleStyle };
@@ -215,11 +213,11 @@ const CONSOLE_STYLE_MODIFIER: [string, number[]][] = [
 
     [ 'final', [ Modifier.FINAL ] ],
     
-]
+];
 
 const CONSOLE_STYLER_BIND: string[] = [
     'f', 'fx', 't', 'tx',
-]
+];
 
 export class ConsoleStyler {
 
@@ -339,7 +337,7 @@ export class ConsoleStyler {
 
         this._initialState=ANSI_NO_STATE;
 
-        let sd: any = { styler: this, styles: {} }
+        let sd: any = { styler: this, styles: {} };
 
         this.a=new Proxy<ConsoleStylesData>(sd,consoleStylesHandler) as unknown as ConsoleStyles;
         sd._emptyStyle=this._createStyle(ANSI_NO_SETTINGS);
@@ -433,19 +431,19 @@ export class ConsoleStyler {
     setFormat(fx: [ string, string ] | [ string, string, string ] | RegExp) {
 
         if (Array.isArray(fx)) {
-            const fx2 = fx[2] ?? '|'
-            const fxx = fx[1].split('').reduce((r,x) => r.indexOf(x)<0 ? r+x : r,fx2)
+            const fx2 = fx[2] ?? '|';
+            const fxx = fx[1].split('').reduce((r,x) => r.indexOf(x)<0 ? r+x : r,fx2);
             const rx = '(?:(?:' +
                        this._escapeRegExp(fx[0]) +
                        '([^'+fxx+']+)' + 
                        this._escapeRegExp(fx2) +
                        ')|(?:' +
                        this._escapeRegExp(fx[1]) +
-                       '))'
-            this._fmtRex=new RegExp(rx,'ms')
+                       '))';
+            this._fmtRex=new RegExp(rx,'ms');
         }
         else
-            this._fmtRex=fx
+            this._fmtRex=fx;
     }
 
     byName(nn: string, ss?: ConsoleStyleSettings): ConsoleStyle {
@@ -507,7 +505,7 @@ export class ConsoleStyler {
             delete this._ctrlStyle[n];
 
         if (n==='?')
-            this._ctrlNameCache={}
+            this._ctrlNameCache={};
         else 
             delete this._ctrlNameCache[n];
     }
@@ -525,7 +523,7 @@ export class ConsoleStyler {
             delete this._ctrlName[n];
 
         if (n==='?')
-            this._ctrlNameCache={}
+            this._ctrlNameCache={};
         else 
             delete this._ctrlNameCache[n];
     }
@@ -536,11 +534,11 @@ export class ConsoleStyler {
 
 //  protected _notModifiers: boolean;
 
-    protected _styleSpecial: { [key: string]: ConsoleStyleSpecialFactory }
+    protected _styleSpecial: { [key: string]: ConsoleStyleSpecialFactory };
 
     protected _styleCache: Map<string, ConsoleStyle>;
 
-    protected _fmtRex!: RegExp
+    protected _fmtRex!: RegExp;
 
     protected _ctorStyle(n: string, ss: Settings): void {
 
@@ -685,7 +683,7 @@ export class ConsoleStyler {
             else if (/[0-9;]+/.test(n))
                 sx=sgrPars2Settings(n,this.modifier);
             else
-                throw Error(`unknown console style '${n}'`)
+                throw Error(`unknown console style '${n}'`);
 
             ss=this._settingsOverwrite(ss,sx);
         }
@@ -707,42 +705,42 @@ export class ConsoleStyler {
                 return ss.concat(sx);
         }
         else if (Array.isArray(sx))
-            return [ss,...sx]
+            return [ss,...sx];
         else
             return settingsOverwrite(ss,sx);
     }
 
     protected _c256Settings(n: string): Settings {
 
-        if (n.charAt(0)==='@') n=n.slice(1)
+        if (n.charAt(0)==='@') n=n.slice(1);
         const c = Number(n.slice(1));
 
-        if (c<0 || c>255) throw Error(`invalid console style '@${n}'`)
+        if (c<0 || c>255) throw Error(`invalid console style '@${n}'`);
 
-        return this._colorSettings(Colors.sgrFromC256(c))
+        return this._colorSettings(Colors.sgrFromC256(c));
     }
 
     protected _c16Settings(n: string): Settings {
 
         let bg: boolean = false;
 
-        if (n.charAt(0)==='%') n=n.slice(1)
+        if (n.charAt(0)==='%') n=n.slice(1);
         let c = Number(n);
 
         if (c<30)       c=0;
-        else if (c<38)  c=c;
+        else if (c<38)  null;
         else if (c<40)  c=0;
         else if (c<48)  bg=true;
         else if (c<90)  c=0;
-        else if (c<98)  c=c;
+        else if (c<98)  null;
         else if (c<100) c=0;
         else if (c<108) bg=true;
         else            c=0;
 
-        if (c<1) throw Error(`invalid console style '%${n}'`)
+        if (c<1) throw Error(`invalid console style '%${n}'`);
 
-        if (bg) return { bg:''+c, ms: 0, mm: 0, mr:0}
-        else    return { fg:''+c, ms: 0, mm: 0, mr:0}
+        if (bg) return { bg:''+c, ms: 0, mm: 0, mr:0};
+        else    return { fg:''+c, ms: 0, mm: 0, mr:0};
     }
 
     protected _hexSettings(hx: string, bf: boolean = false): Settings {
@@ -773,7 +771,7 @@ export class ConsoleStyler {
 
     protected _escapeRegExp(str: string): string {
 
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     protected _tFormat(str:TemplateStringsArray, args: any[], s: State): string {
@@ -792,25 +790,25 @@ export class ConsoleStyler {
 
     protected _format(s: string): string {
 
-        let   stk: any[] = ['']
-        let   i: number = 0
+        let   stk: any[] = [''];
+        let   i: number = 0;
 
         for (;;) {
-            const m:any = this._fmtRex.exec(s)
+            const m:any = this._fmtRex.exec(s);
             if (!m) {
                 if (s) stk[i]=this._fAppend(stk[i],s);
                 break;
             }
             if (m.index>0) stk[i]=this._fAppend(stk[i],s.slice(0,m.index));
             if (m[1]) {
-                stk[++i]=this._byName(m[1])
+                stk[++i]=this._byName(m[1]);
                 stk[++i]='';
             }
             else if (i>0) {
                 i-=2;
                 stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
             }
-            s=s.slice(m.index+m[0].length)
+            s=s.slice(m.index+m[0].length);
         }
 
         while (i>0) {
@@ -836,7 +834,7 @@ export class ConsoleStyler {
             return s1;
         }
         else {
-            s1.addBackList(s2)
+            s1.addBackList(s2);
             return s1;
         }
     }
@@ -1039,7 +1037,7 @@ export class ConsoleStyler {
             m=rx.exec(s);
             if (!m) break;
             if (m[2].charAt(1)==='[') { // SGR
-                if (!esc) esc=this._ctrlUnstyledName('\x1B')
+                if (!esc) esc=this._ctrlUnstyledName('\x1B');
                 cn=css['sgr'](esc+m[2].slice(1));
             }
             else {
@@ -1055,7 +1053,7 @@ export class ConsoleStyler {
     protected _settingsName(ss: Settings)
 
     {  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
-       return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`
+       return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`;
     }
 
     protected _hexFunction(ss: ConsoleStyleSettings, bf: boolean, hx: string): ConsoleStyle {

@@ -23,7 +23,7 @@ export interface TermInfoCtorData {
 
 export class TermInfo {
 
-    termType: string
+    termType: string;
 
     level: number;
 
@@ -35,7 +35,7 @@ export class TermInfo {
             opts: opts ?? {},
             env: envGetter(opts.env),
             cmdOpts: optsGetter(opts.cmdOpts),
-        }
+        };
 
         this.termType=this._getTermType(cd);
 
