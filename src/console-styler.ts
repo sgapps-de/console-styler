@@ -137,6 +137,8 @@ export type ConsoleStyle = {
 
     bg: ConsoleStyle;
     not: ConsoleStyle;
+    dark: ConsoleStyle;
+    bright: ConsoleStyle;
 
     bold: ConsoleStyle;
     dim: ConsoleStyle;
@@ -291,7 +293,11 @@ export default class ConsoleStyler {
     bgGrayBright!: ConsoleStyle;
     bgWhiteBright!: ConsoleStyle;
 
+    not!: ConsoleStyle;
     bg!: ConsoleStyle;
+
+    dark!: ConsoleStyle;
+    bright!: ConsoleStyle;
 
     bold!: ConsoleStyle;
     dim!: ConsoleStyle;
@@ -307,7 +313,6 @@ export default class ConsoleStyler {
     strikethrough!: ConsoleStyle;
     strike!: ConsoleStyle;
     overline!: ConsoleStyle;
-    not!: ConsoleStyle;
 
     reset!: ConsoleStyle;
 
@@ -450,14 +455,14 @@ export default class ConsoleStyler {
         if (Array.isArray(fx)) {
             const fx2 = fx[2] ?? '|';
             const fxx = fx[1].split('').reduce((r,x) => r.indexOf(x)<0 ? r+x : r,fx2);
-            const rx = '(?:(?:' +
+            const rx = '(?:' +
                        this._escapeRegExp(fx[0]) +
                        '([^'+fxx+']+)' + 
                        this._escapeRegExp(fx2) +
-                       ')|(?:' +
+                       ')|' +
                        this._escapeRegExp(fx[1]) +
-                       '))';
-            this._fmtRex=new RegExp(rx,'ms');
+                       '';
+            this._fmtRex=new RegExp(rx);
         }
         else
             this._fmtRex=fx;

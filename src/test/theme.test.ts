@@ -26,7 +26,7 @@ describe('Formating with a Theme', () => {
   it('new ConsoleStyler', () => {
     cs=new ConsoleStyler({ ctrlName: ESCAPE, theme });
     expect(cs instanceof ConsoleStyler).toBe(true);
-    expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
+    expect(cs.sgr(cs.none('None'))).toBe('None');
   });
 
   it('Error I', () => {
@@ -67,7 +67,7 @@ describe('Formating with a Theme - Environment Overwrite', () => {
   it('new ConsoleStyler', () => {
     cs=new ConsoleStyler({ ctrlName: ESCAPE, theme, env: TEST_ENV });
     expect(cs instanceof ConsoleStyler).toBe(true);
-    expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
+    expect(cs.sgr(cs.none('None'))).toBe('None');
   });
 
   it('Message', () => {
