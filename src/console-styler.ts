@@ -172,7 +172,7 @@ export interface ConsoleStylerOptions {
 
     multiFmt?:    boolean,
 
-    delimiter?:   RegExp | [ string, string, string] | [string, string],
+    format?:      RegExp | [ string, string, string] | [string, string],
 
     env?:         EnvironmentOptions,
     cmdOpts?:     CommandOptions,
@@ -336,7 +336,7 @@ export class ConsoleStyler {
         this.stderr=!!opts.stderr;
         this.out=this.stderr ? process.stderr : process.stdout;
 
-        this.level=opts.level ?? (this.out.isTTY ? this.term.level : 0);
+        this.level=opts.level ?? this.term.level(this.out);
         this.modifier=opts.modifier ?? this.term.modifier;
 
         this.multiFmt=opts.multiFmt ?? false;
@@ -391,7 +391,7 @@ export class ConsoleStyler {
         this._ctrlName={ '\n': '\\n', '\r': '\\r',  '?': this._ctrlNameStd };
         this._ctrlNameCache={};
 
-        this.setFormat(opts.delimiter ?? ['{{','}}','|']);
+        this.setFormat(opts.format ?? ['{{','}}','|']);
 
         for(const n of CONSOLE_STYLER_BIND) (this as any)[n]=(this as any)[n].bind(this);
 
@@ -682,6 +682,11 @@ export class ConsoleStyler {
         for (let n of nn.split(/[.+ ] */)) {
             if (s=this._sd.styles[n])
                 sx=this._styleSettings(s);
+            else if (n.indexOf('(')>=0) {
+                const m: RegExpMatchArray | null = n.match(/^([^(]+)\(([^)]*)\)$/);
+                if (!m) throw Error(`unknown console style '${n}'`);
+                sx=this._byNameFunc(m[1],m[2]);
+            }
             else if (n.charAt(0)==='#')
                 sx=this._hexSettings(n);
             else if (n.charAt(0)==='@')
@@ -701,6 +706,30 @@ export class ConsoleStyler {
         return ss;
     }
 
+    protected _byNameFunc(fn: string, px: string): ConsoleStyleSettings {
+
+        const bg = fn.startsWith('bg');
+
+        switch(fn) {
+            case "hex":
+            case "bgHex":
+                return this._hexSettings(px,bg);
+            case "ansi256":
+            case "bgAnsi256":
+                return this._c256Settings(px,bg);
+            case "ansi16":
+            case "bgAnsi16":
+                return this._c16Settings(px,bg);
+            case "rgb":
+            case "bgRgb": {
+                const rgb = px.split(',').map(x => parseInt(x));
+                return this._colorSettings(Colors.sgrFromRgb(rgb[0] || 0,rgb[1] || 0,rgb[2] || 0,bg));
+            }
+        }
+
+        throw Error(`unknown console style ${fn}(${px})`);
+    }
+
     protected _settingsOverwrite(ss: ConsoleStyleSettings, sx: ConsoleStyleSettings) : ConsoleStyleSettings {
 
         if (Array.isArray(ss)) {
@@ -718,37 +747,24 @@ export class ConsoleStyler {
             return settingsOverwrite(ss,sx);
     }
 
-    protected _c256Settings(n: string): Settings {
+    protected _c256Settings(n: string, bf?: boolean): Settings {
 
         if (n.charAt(0)==='@') n=n.slice(1);
         const c = Number(n.slice(1));
 
         if (c<0 || c>255) throw Error(`invalid console style '@${n}'`);
 
-        return this._colorSettings(Colors.sgrFromC256(c));
+        return this._colorSettings(Colors.sgrFromC256(c,bf));
     }
 
-    protected _c16Settings(n: string): Settings {
-
-        let bg: boolean = false;
+    protected _c16Settings(n: string, bf?: boolean): Settings {
 
         if (n.charAt(0)==='%') n=n.slice(1);
         let c = Number(n);
 
-        if (c<30)       c=0;
-        else if (c<38)  null;
-        else if (c<40)  c=0;
-        else if (c<48)  bg=true;
-        else if (c<90)  c=0;
-        else if (c<98)  null;
-        else if (c<100) c=0;
-        else if (c<108) bg=true;
-        else            c=0;
+        if (c<0 || c>15) throw Error(`invalid console style '@${n}'`);
 
-        if (c<1) throw Error(`invalid console style '%${n}'`);
-
-        if (bg) return { bg:''+c, ms: 0, mm: 0, mr:0};
-        else    return { fg:''+c, ms: 0, mm: 0, mr:0};
+        return this._colorSettings(Colors.sgrFromC16(c,bf));
     }
 
     protected _hexSettings(hx: string, bf: boolean = false): Settings {
