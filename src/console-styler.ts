@@ -222,10 +222,6 @@ const CONSOLE_STYLE_MODIFIER: [string, number[]][] = [
     
 ];
 
-const CONSOLE_STYLER_BIND: string[] = [
-    'f', 'fx', 't', 'tx',
-];
-
 export default class ConsoleStyler {
 
     level: number;
@@ -407,7 +403,8 @@ export default class ConsoleStyler {
 
         this.setFormat(opts.format ?? ['{{','}}','|']);
 
-        for(const n of CONSOLE_STYLER_BIND) (this as any)[n]=(this as any)[n].bind(this);
+        for(const n of [ 'f', 'fx' ])
+            (this as any)[n]=(this as any)[n].bind(this);
 
         if (opts.alias) this.alias(opts.alias);
         if (opts.ctrlStyle) this.ctrlStyle(opts.ctrlStyle);
@@ -418,38 +415,16 @@ export default class ConsoleStyler {
 
     f(... sx: any[]): string {
 
-        const is = this._initialState;
-        this._initialState=ANSI_NO_STATE_FINAL;
-
-        const r=this._format(this._applyArgs(sx));
-
-        this._initialState=is;
-
-        return r;
+        if (sx[0].raw) return this._tFormat(sx[0],sx.slice(1),ANSI_NO_STATE_FINAL);
+        else           return this._format(this._applyArgs(sx),ANSI_NO_STATE_FINAL);
     }
 
     fx(... sx: any[]): string {
 
-        const is = this._initialState;
-        this._initialState=ANSI_NO_STATE;
-
-        const r=this._format(this._applyArgs(sx));
-
-        this._initialState=is;
-
-        return r;
+        if (sx[0].raw) return this._tFormat(sx[0],sx.slice(1),ANSI_NO_STATE);
+        else           return this._format(this._applyArgs(sx),ANSI_NO_STATE);
     }
 
-    t(str:TemplateStringsArray, ... args: any[]): string {
-
-        return this._tFormat(str,args,ANSI_NO_STATE_FINAL);
-    }
-    
-    tx(str:TemplateStringsArray, ... args: any[]): string {
-
-        return this._tFormat(str,args,ANSI_NO_STATE);
-    }
-    
     setFormat(fx: [ string, string ] | [ string, string, string ] | RegExp) {
 
         if (Array.isArray(fx)) {
@@ -831,28 +806,28 @@ export default class ConsoleStyler {
 
         let sf:string = str.join('\uEF33');
 
-        const is = this._initialState;
-        this._initialState=ANSI_NO_STATE;
-        sf=this._format(sf);
-        this._initialState=is;
+        sf=this._format(sf,s);
 
         return sf.split('\uEF33').reduce((r: string, s:string, i: number) => {
             return r+s+(args[i]?.toString() ?? '');
         },'');
     }
 
-    protected _format(s: string): string {
+    protected _format(str: string, s: State): string {
 
         let   stk: any[] = [''];
         let   i: number = 0;
 
+        const is = this._initialState;
+        this._initialState=s;
+
         for (;;) {
-            const m:any = this._fmtRex.exec(s);
+            const m:any = this._fmtRex.exec(str);
             if (!m) {
-                if (s) stk[i]=this._fAppend(stk[i],s);
+                if (str) stk[i]=this._fAppend(stk[i],str);
                 break;
             }
-            if (m.index>0) stk[i]=this._fAppend(stk[i],s.slice(0,m.index));
+            if (m.index>0) stk[i]=this._fAppend(stk[i],str.slice(0,m.index));
             if (m[1]) {
                 stk[++i]=this._byName(m[1]);
                 stk[++i]='';
@@ -861,13 +836,15 @@ export default class ConsoleStyler {
                 i-=2;
                 stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
             }
-            s=s.slice(m.index+m[0].length);
+            str=str.slice(m.index+m[0].length);
         }
 
         while (i>0) {
             i-=2;
             stk[i]=this._fAppend(stk[i],this._fApplyEx(stk[i+1],stk[i+2]));
         }
+
+        this._initialState=is;
 
         return stk[0].toString();
     }
