@@ -15,16 +15,17 @@ function level2ColorSupport(level: number): ColorSupport {
     return { hasBasic: true, has256: level>=2, has16m: level>=3 };
 }
 
-export class Chalk extends ConsoleStyler {
-
-    constructor(opts: ConsoleStylerOptions) {
-        super(opts);
-    }
-}
-
 const CONSOLE_STYLER_CHALK_OPTIONS : ConsoleStylerOptions = {
     format: [ '{', '}', ' ' ]
 };
+
+export class Chalk extends ConsoleStyler {
+
+    constructor(opts: ConsoleStylerOptions) {
+        const sOpts = { ... CONSOLE_STYLER_CHALK_OPTIONS, ...opts }
+        super(sOpts);
+    }
+}
 
 const chalk = new ConsoleStyler(CONSOLE_STYLER_CHALK_OPTIONS);
 export const chalkStderr = new ConsoleStyler({... CONSOLE_STYLER_CHALK_OPTIONS, stderr: true});
