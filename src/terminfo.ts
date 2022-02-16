@@ -1,5 +1,4 @@
 import * as os from 'os';
-import { unzipSync } from 'zlib';
 
 import  { EnvironmentOptions, CommandOptions, 
          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
