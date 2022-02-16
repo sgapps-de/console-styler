@@ -153,4 +153,28 @@ describe('Formating with cs.f - Overwrite Delimiter', () => {
     expect(cs.sgr(cs.f('<~blue/Text: "<~underline/The <~red/R<~bold/e~>d~> Text~>"~>')))
       .toBe('␛[34mText: "␛[4mThe ␛[31mR␛[1me␛[22md␛[34m Text␛[24m"␛[m');
   });
+
+  it('Red Text II', () => {
+    cs.setFormat('<< >> :');
+    expect(cs.sgr(cs.f('<<red:Red>>')))
+      .toBe('␛[31mRed␛[m');
+  });
+  
+  it('Red Text III', () => {
+    cs.setFormat(['[', ']', ' ']);
+    expect(cs.sgr(cs.f('[red Red]')))
+      .toBe('␛[31mRed␛[m');
+  });
+  
+  it('Red Text IV', () => {
+    cs.setFormat('[', ']', ' ');
+    expect(cs.sgr(cs.f('[red Red]')))
+      .toBe('␛[31mRed␛[m');
+  });
+  
+  it('Red Text V', () => {
+    cs.setFormat(/(?:{([^=}]+)=)|}/);
+    expect(cs.sgr(cs.f('{red=Red}')))
+      .toBe('␛[31mRed␛[m');
+  });
 });
