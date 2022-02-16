@@ -1,17 +1,13 @@
 import { ConsoleStyler } from '../console-styler';
 
-const CTRL_NAMES : { [key: string]: string }= {
-  '\r': '\\r', 
-  '\n': '\\n', 
-  '\x1B': '␛', 
-};
+const ESCAPE = { '\x1B': '␛' };
 
 describe('Formating with cs.f ...', () => {
 
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ term: 'test', ctrlName: CTRL_NAMES });
+    cs=new ConsoleStyler({ ctrlName: ESCAPE });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
   });
@@ -82,7 +78,7 @@ describe('Formating with cs.f - Overwrite Delimiter', () => {
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ term: 'test', ctrlName: CTRL_NAMES, delimiter: [ '<~', '~>', '/' ] });
+    cs=new ConsoleStyler({ term: 'test', ctrlName: ESCAPE, delimiter: [ '<~', '~>', '/' ] });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
   });

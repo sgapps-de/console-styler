@@ -1,17 +1,13 @@
 import { ConsoleStyler } from '../console-styler';
 
-const CTRL_NAMES : { [key: string]: string }= {
-  '\r': '\\r', 
-  '\n': '\\n', 
-  '\x1B': '␛', 
-};
+const ESCAPE = { '\x1B': '␛' };
 
 describe('Formating with cs.s ...', () => {
 
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ term: 'test',  ctrlName: CTRL_NAMES });
+    cs=new ConsoleStyler({ ctrlName: ESCAPE });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
   });

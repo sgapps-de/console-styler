@@ -1,10 +1,6 @@
 import { ConsoleStyler } from '../console-styler';
 
-const CTRL_NAMES : { [key: string]: string } = {
-  '\r': '\\r', 
-  '\n': '\\n', 
-  '\x1B': '␛', 
-};
+const ESCAPE = { '\x1B': '␛' };
 
 const theme = {
 
@@ -18,8 +14,9 @@ const theme = {
 
 };
 
-const testEnv = {
+const TEST_ENV = {
     'CONSOLE_THEME': 'msg=green',
+    'TERM': 'test'
 };
 
 describe('Formating with a Theme', () => {
@@ -27,7 +24,7 @@ describe('Formating with a Theme', () => {
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ term: 'test',  ctrlName: CTRL_NAMES, theme });
+    cs=new ConsoleStyler({ ctrlName: ESCAPE, theme });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
   });
@@ -52,8 +49,13 @@ describe('Formating with a Theme', () => {
       .toBe('␛[38;2;204;102;0mWarning␛[m');
   });
   
-  it('Message', () => {
+  it('Message I', () => {
     expect(cs.sgr(cs.a.msg('Message')))
+      .toBe('␛[4mMessage␛[m');
+  });
+  
+  it('Message II', () => {
+    expect(cs.sgr(cs.f('{{msg|Message}}')))
       .toBe('␛[4mMessage␛[m');
   });
 });
@@ -63,13 +65,18 @@ describe('Formating with a Theme - Environment Overwrite', () => {
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ term: 'test',  ctrlName: CTRL_NAMES, theme, env: testEnv });
+    cs=new ConsoleStyler({ ctrlName: ESCAPE, theme, env: TEST_ENV });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
   });
 
   it('Message', () => {
     expect(cs.sgr(cs.a.msg('Message')))
+      .toBe('␛[32mMessage␛[m');
+  });
+  
+  it('Message II', () => {
+    expect(cs.sgr(cs.f('{{msg|Message}}')))
       .toBe('␛[32mMessage␛[m');
   });
 });

@@ -1,18 +1,14 @@
 import { ConsoleStyler } from '../console-styler';
 import { Modifier } from '../state';
 
-const CTRL_NAMES : { [key: string]: string }= {
-  '\r': '\\r', 
-  '\n': '\\n', 
-  '\x1B': '␛', 
-};
+const ESCAPE = { '\x1B': '␛' };
 
 describe('Formating with all Modifiers ...', () => {
 
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ term: 'test', modifier: Modifier.STANDARD, ctrlName: CTRL_NAMES });
+    cs=new ConsoleStyler({ modifier: Modifier.STANDARD, ctrlName: ESCAPE });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.sgr(cs.none('None'))).toBe('None');
   });
@@ -93,7 +89,7 @@ describe('Formating without Double Underline ...', () => {
     let cs: ConsoleStyler;
   
     it('new ConsoleStyler', () => {
-      cs=new ConsoleStyler({ term: 'test', modifier: (Modifier.STANDARD & ~Modifier.DOUBLE_UNDERLINE), ctrlName: CTRL_NAMES });
+      cs=new ConsoleStyler({ modifier: (Modifier.STANDARD & ~Modifier.DOUBLE_UNDERLINE), ctrlName: ESCAPE });
       expect(cs instanceof ConsoleStyler).toBe(true);
       expect(cs.sgr(cs.none('None'))).toBe('None');
     });
@@ -129,7 +125,7 @@ describe('Formating with "not" ...', () => {
     let cs: ConsoleStyler;
   
     it('new ConsoleStyler', () => {
-      cs=new ConsoleStyler({ term: 'test', modifier: Modifier.STANDARD, ctrlName: CTRL_NAMES });
+      cs=new ConsoleStyler({ modifier: Modifier.STANDARD, ctrlName: ESCAPE });
       expect(cs instanceof ConsoleStyler).toBe(true);
       expect(cs.sgr(cs.none('None'))).toBe('None');
     });
