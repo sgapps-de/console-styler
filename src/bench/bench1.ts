@@ -1,5 +1,5 @@
 import benny from 'benny';
-import { ConsoleStyler } from '../console-styler';
+import ConsoleStyler from '../console-styler';
 import chalk from 'chalk';
 
 async function bench() {
