@@ -236,13 +236,18 @@ cs.alias('myLower',x => x.toLowerCase(),'SS');
 - `bold` - Make the text bold.
 - `dim` - Make the text have lower opacity.
 - `blink` - Make the text blinking. *(Not widely supported)*
+- `rapidBlink` - Make the text rapidly blinking. *(Anywhere supported?)*
 - `italic` - Make the text italic. *(Not widely supported)*
 - `underline` - Put a horizontal line below the text. *(Not widely supported)*
-- `doubleunderline` - Put two horizontal lines below the text. *(Not widely supported)*
+- `ul` - Short for `underline`
+- `doubleUnderline` - Put two horizontal lines below the text. *(Not widely supported)*
+- `dblUl` - Short for `doubleUnderline`
 - `overline` - Put a horizontal line above the text. *(Not widely supported)*
+- `strikeThrough` - Puts a horizontal line through the center of the text. *(Not widely supported)*
+- `strikethrough` - Alias for `chalk` compatibility
+- `strike` - Short for `strikeThrough`
 - `inverse`- Invert background and foreground colors.
 - `hidden` - Print the text but make it invisible.
-- `strikethrough` - Puts a horizontal line through the center of the text. *(Not widely supported)*
 - `visible` - Print the text only for a color level above zero. Can be useful for things that are purely cosmetic.
 - `not` - turn the following modifier off - may be used in nested styles.
 
@@ -257,7 +262,7 @@ cs.alias('myLower',x => x.toLowerCase(),'SS');
 - `cyan`
 - `white`
 - `gray`
-- `grey` (same as `gray`)
+- `grey` (Same as `gray`)
 - `bright` - Brighten the following color - e.g. `bright.red`
 - `dark` - Darken the following color
 
@@ -287,20 +292,16 @@ Bright colors in *chalk* style:
 
 Or in *chalk* style:
 
-- `bgGreen`
-- `bgYellow`
-- `bgBlue`
-- `bgMagenta`
-- `bgCyan`
-- `bgWhite`
-- `bgBlackBright` (alias: `bgGray`, `bgGrey`)
+- `bgBlack`
+- `bgRed`
+
+    ...
+
+- `bgGrey`
+- `bgBlackBright`
 - `bgRedBright`
-- `bgGreenBright`
-- `bgYellowBright`
-- `bgBlueBright`
-- `bgMagentaBright`
-- `bgCyanBright`
-- `bgWhiteBright`
+
+    ...
 
 ### Special Styles
 
@@ -312,7 +313,7 @@ Or in *chalk* style:
 
 ### 256 and Truecolor color support
 
-ConsoleStyler supports 256 colors and Truecolor (16 million colors) on supported terminals.
+`Console-styler` supports 256 colors and Truecolor (16 million colors).
 
 - `hex(h)` - Hex Color like `'#CC6600'`
 - `rgb(r,g,b)` - RGB color - components `0` ... `255`.
