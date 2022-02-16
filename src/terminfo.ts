@@ -63,11 +63,10 @@ export class TermInfo {
 
     protected _getTermType(cd: TermInfoCtorData): string {
 
-        let v: string | undefined;
+        let v:  string | undefined;
+        let ct: string | undefined;
 
         if (cd.opts.termType) return cd.opts.termType.toLowerCase();
-
-        if (v=cd.env('TERM')) return v.toLowerCase();
 
         if (process.platform === 'win32') {
             if (v=cd.env('CONEMUANSI'))
@@ -76,7 +75,22 @@ export class TermInfo {
             return (cd.env('SESSIONNAME')==='Console') ? 'windows-console' : 'windows-terminal';
         }
 
-        return 'dumb';
+        ct=cd.env('COLORTERM')?.toLowerCase();
+
+        if (cd.env('TERMINATOR_UUID')) return 'terminator'+(ct ? '-'+ct : '');
+
+        if (v=cd.env('TERM')) {
+            v=v.toLowerCase();
+            if (ct) {
+                if (v.startsWith('xterm'))
+                    v='xterm-'+ct;
+                else if (!/color|bit/i.test(v))
+                    v=v+'-'+ct;
+            }
+            return v;
+        }
+
+        return ct || 'dumb';
     }
 
     protected _getColorLevel(cd: TermInfoCtorData): number {
@@ -87,30 +101,32 @@ export class TermInfo {
         else if (this._level)
             return this._level;
 
-        else if (this.termType==='test')
+        const tt = this.termType;
+        console.log('tt',tt)
+
+        if (tt==='test')
+            return 3;
+    
+        else if (tt==='windows-terminal')
             return 3;
 
-        else if (this.termType==='windows-terminal')
-            return 3;
-
-        else if (this.termType==='windows-console') {
+        else if (tt==='windows-console') {
             const osr = os.release().split('.');
             if (Number(osr[0]) >= 10 && Number(osr[2]) >= 10586)
                 return Number(osr[2]) >= 14931 ? 3 : 2;
             else
                 return 1;
         }
-
-        else if (this.termType==='conemu-ansi')
-            return 1;
-        
-        else if (this.termType==='truecolor')
+        else if (tt==='terminator' || tt=='xterm')
             return 3;
 
-        else if (this.termType==='color256')
+        else if (/truecolor|24bit/i.test(this.termType))
+            return 3;
+
+        else if (/256/.test(this.termType))
             return 2;
-        
-        else if (this.termType==='color')
+
+        else if (/color/i.test(this.termType))
             return 1;
 
         else
@@ -122,15 +138,20 @@ export class TermInfo {
         if (this.modifier)
             return this.modifier;
 
-        else if (this.termType==='test')
+        const tt = this.termType;
+
+        if (tt==='test')
             return Modifier.STANDARD;
 
-        else if (this.termType==='windows-terminal')
+        else if (tt==='windows-terminal')
             return Modifier.WIN_TERM;
 
-        else if (this.termType==='windows-console')
+        else if (tt==='windows-console')
             return Modifier.WIN_CON;
-       
+
+        else if (tt.startsWith('terminator') || tt.startsWith('xterm'))
+            return Modifier.XTERM;
+
         else
             return Modifier.DEFAULT;
     }

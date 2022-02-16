@@ -18,8 +18,9 @@ export enum Modifier {
     OVERLINE         = 0x0400,
     STANDARD         = 0x07FF,
 
-    WIN_TERM         = STANDARD & (~RAPID_BLINK),
-    WIN_CON          = STANDARD & (~RAPID_BLINK),
+    WIN_TERM         = STANDARD,
+    WIN_CON          = STANDARD,
+    XTERM            = STANDARD & (~(DOUBLE_UNDERLINE|OVERLINE)),
     DEFAULT          = BOLD | UNDERLINE | INVERSE,
 
     FINAL            = 0x00010000,
@@ -270,7 +271,7 @@ export function settingsOverwrite(s1: Settings, s2: Settings): Settings {
 
 //  console.log("Over:",stateShow(s1),'+',stateShow(s2))
 
-    if (s.ms&Modifier.COLOR) {
+    if ((s.ms&Modifier.COLOR) && !(s2.ms&Modifier.COLOR)) {
         if (s.ms&Modifier.BACKGROUND) {
             if (s2.fg) s.bg=Colors.sgrBackground(settingsColorSpecial(s2.fg,s.ms));
         }
