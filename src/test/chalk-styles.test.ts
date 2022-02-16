@@ -12,8 +12,18 @@ describe('Chalk Style Formating ...', () => {
       .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
   });
   
-  it('Oranger Text II', () => {
+  it('Orange Text II', () => {
     expect(chalk.sgr(chalk.a['#C60']('Orange')))
+      .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
+  });
+  
+  it('Orange Text III', () => {
+    expect(chalk.sgr(chalk.hex('#C60')('Orange')))
+      .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
+  });
+  
+  it('Orange Text IV', () => {
+    expect(chalk.sgr(chalk.rgb(204,102,0)('Orange')))
       .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
   });
   
@@ -41,9 +51,19 @@ describe('Chalk Style Formating ...', () => {
     expect(chalk.sgr(chalk.red('Die '+chalk.bold('Red')+' Farbe')))
       .toBe('\\x1B[31mDie \\x1B[1mRed\\x1B[22m Farbe\\x1B[m');
   });
+
   it('Green Background', () => {
     expect(chalk.sgr(chalk.bgGreen('Green')))
       .toBe('\\x1B[42mGreen\\x1B[m');
   });
 
+  it('Orange Background I', () => {
+    expect(chalk.sgr(chalk.bgHex('#CC6600')('Orange')))
+      .toBe('\\x1B[48;2;204;102;0mOrange\\x1B[m');
+  });
+
+  it('Orange Background II', () => {
+    expect(chalk.sgr(chalk.bgRgb(204,102,0)('Orange')))
+      .toBe('\\x1B[48;2;204;102;0mOrange\\x1B[m');
+  });
 });

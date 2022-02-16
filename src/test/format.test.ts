@@ -9,6 +9,7 @@ describe('Formating with cs.f ...', () => {
   it('new ConsoleStyler', () => {
     cs=new ConsoleStyler({ ctrlName: ESCAPE });
     expect(cs instanceof ConsoleStyler).toBe(true);
+    expect(cs.level).toBe(3);
     expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
   });
 
@@ -24,6 +25,16 @@ describe('Formating with cs.f ...', () => {
   
   it('Orange Text II', () => {
     expect(cs.a.sgr(cs.f('{{#C60|Orange}}')))
+      .toBe('␛[38;2;204;102;0mOrange␛[m');
+  });
+  
+  it('Orange Text III', () => {
+    expect(cs.a.sgr(cs.f('{{hex(C60)|Orange}}')))
+      .toBe('␛[38;2;204;102;0mOrange␛[m');
+  });
+  
+  it('Orange Text IV', () => {
+    expect(cs.a.sgr(cs.f('{{rgb(204,102,0)|Orange}}')))
       .toBe('␛[38;2;204;102;0mOrange␛[m');
   });
   
@@ -78,7 +89,7 @@ describe('Formating with cs.f - Overwrite Delimiter', () => {
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
-    cs=new ConsoleStyler({ term: 'test', ctrlName: ESCAPE, delimiter: [ '<~', '~>', '/' ] });
+    cs=new ConsoleStyler({ term: 'test', ctrlName: ESCAPE, format: [ '<~', '~>', '/' ] });
     expect(cs instanceof ConsoleStyler).toBe(true);
     expect(cs.a.sgr(cs.a.none('None'))).toBe('None');
   });
