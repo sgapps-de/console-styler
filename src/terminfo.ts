@@ -50,10 +50,7 @@ export class TermInfo {
 
         if (cd.opts.termType) return cd.opts.termType.toLowerCase();
 
-        if (v=cd.env('TERM')) {
-            v=v.toLowerCase();
-            return 'color';
-        }
+        if (v=cd.env('TERM')) return v.toLowerCase();
 
         if (process.platform === 'win32') {
             if (v=cd.env('CONEMUANSI'))
