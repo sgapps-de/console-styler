@@ -82,6 +82,9 @@ export type ConsoleStyle = {
     ansi256:   (c: number) => ConsoleStyle,
     bgAnsi256: (c: number) => ConsoleStyle,
 
+    ansi16:   (c: number) => ConsoleStyle,
+    bgAnsi16: (c: number) => ConsoleStyle,
+
     a: ConsoleStyles,
 
     final: ConsoleStyle;
@@ -221,7 +224,7 @@ const CONSOLE_STYLER_BIND: string[] = [
     'f', 'fx', 't', 'tx',
 ];
 
-export class ConsoleStyler {
+export default class ConsoleStyler {
 
     level: number;
     modifier: Modifier;
@@ -241,6 +244,8 @@ export class ConsoleStyler {
     bgRgb: (r: number, g: number, b: number) => ConsoleStyle;
     ansi256: (c: number) => ConsoleStyle;
     bgAnsi256: (c: number) => ConsoleStyle;
+    ansi16: (c: number) => ConsoleStyle;
+    bgAnsi16: (c: number) => ConsoleStyle;
 
     black!: ConsoleStyle;
     red!: ConsoleStyle;
@@ -361,6 +366,8 @@ export class ConsoleStyler {
             bgRgb: this._rgbFactory.bind(this,true),
             ansi256: this._ansi256Factory.bind(this,false),
             bgAnsi256: this._ansi256Factory.bind(this,true),
+            ansi16: this._ansi16Factory.bind(this,false),
+            bgAnsi16: this._ansi16Factory.bind(this,true),
         };
 
         this.hex=this._hexFunction.bind(this,ANSI_NO_SETTINGS,false);
@@ -369,9 +376,11 @@ export class ConsoleStyler {
         this.bgRgb=this._rgbFunction.bind(this,ANSI_NO_SETTINGS,true);
         this.ansi256=this._ansi256Function.bind(this,ANSI_NO_SETTINGS,false);
         this.bgAnsi256=this._ansi256Function.bind(this,ANSI_NO_SETTINGS,true);
+        this.ansi16=this._ansi16Function.bind(this,ANSI_NO_SETTINGS,false);
+        this.bgAnsi16=this._ansi16Function.bind(this,ANSI_NO_SETTINGS,true);
 
         (this as any)['none']=sd.styles['none']=sd._emptyStyle;
-        this._styleCache.set(this._settingsName(ANSI_NO_SETTINGS),sd._emptyStyle);
+        this._styleCache.set(this._settingsCacheName(ANSI_NO_SETTINGS),sd._emptyStyle);
 
         for (const [ n, c ] of CONSOLE_STYLE_COLORS)
             this._ctorColor(n,c);
@@ -544,15 +553,13 @@ export class ConsoleStyler {
 
     protected _styleSpecial: { [key: string]: ConsoleStyleSpecialFactory };
 
-    protected _styleCache: Map<string, ConsoleStyle>;
-
     protected _fmtRex!: RegExp;
 
     protected _ctorStyle(n: string, ss: Settings): void {
 
         const cs = this._createStyle(ss);
         (this as any)[n]=this._sd.styles[n]=cs;
-        this._styleCache.set(this._settingsName(ss),cs);
+        this._styleCache.set(this._settingsCacheName(ss),cs);
     }
 
     protected _ctorFunctionStyle(n: string, f: ConsoleStyleAliasFunction, fType: string = 'S'): void {
@@ -653,18 +660,26 @@ export class ConsoleStyler {
         return (s as any)._SETTINGS;
     }
 
+    protected _styleCache: Map<string, ConsoleStyle>;
+
     protected _settingsStyle(ss: ConsoleStyleSettings): ConsoleStyle {
 
         if (Array.isArray(ss)) {
             return this._createStyle(ss);
         }
         else {
-            const n = this._settingsName(ss);
+            const n = this._settingsCacheName(ss);
             let s: ConsoleStyle | undefined = this._styleCache.get(n);
 
             if (!s) this._styleCache.set(n,s=this._createStyle(ss));
 
             return s;  }
+    }
+
+    protected _settingsCacheName(ss: Settings)
+
+    {  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
+       return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`;
     }
 
     protected _byNameCache: Map<string, ConsoleStyleSettings>;
@@ -787,8 +802,17 @@ export class ConsoleStyler {
     protected _colorSettings(fg?: string, bg?: string): Settings {
 
         let ss: Settings = { ms: 0, mm: 0, mr: 0 };
-        if (fg) ss.fg=fg;
-        if (bg) ss.bg=bg;
+    
+        if (fg && (fg.charAt(0)==='4' || fg.charAt(0)==='1')) {
+            ss.bg=fg;
+            if (bg && (bg.charAt(0)==='3' || bg.charAt(0)==='9')) ss.fg=bg;
+        }
+        else if (bg && (bg.charAt(0)==='3' || bg.charAt(0)==='9'))
+            ss.fg=bg;
+        else {
+            if (fg) ss.fg=fg;
+            if (bg) ss.bg=bg;
+        }
 
         return ss;
     }
@@ -1074,12 +1098,6 @@ export class ConsoleStyler {
         return r+s;
     }
 
-    protected _settingsName(ss: Settings)
-
-    {  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
-       return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`;
-    }
-
     protected _hexFunction(ss: ConsoleStyleSettings, bf: boolean, hx: string): ConsoleStyle {
 
         const sh: Settings = this._hexSettings(hx,bf);
@@ -1095,10 +1113,7 @@ export class ConsoleStyler {
     
     protected _rgbFunction(ss: ConsoleStyleSettings, bf: boolean, r: number, g: number, b: number): ConsoleStyle {
 
-        const sc =  bf ?
-                        this._colorSettings(undefined,Colors.sgrFromRgb(r,g,b,true))
-                    :
-                        this._colorSettings(Colors.sgrFromRgb(r,g,b,false),undefined);
+        const sc = this._colorSettings(Colors.sgrFromRgb(r,g,b,bf));
 
         ss=this._settingsOverwrite(ss,sc);
 
@@ -1112,10 +1127,7 @@ export class ConsoleStyler {
 
     protected _ansi256Function(ss: ConsoleStyleSettings, bf: boolean, c: number): ConsoleStyle {
 
-        const sc =  bf ?
-                        this._colorSettings(undefined,Colors.sgrFromC256(c,true))
-                    :
-                        this._colorSettings(Colors.sgrFromC256(c,false),undefined);
+        const sc = this._colorSettings(Colors.sgrFromC256(c,bf));
 
         ss=this._settingsOverwrite(ss,sc);
 
@@ -1127,4 +1139,17 @@ export class ConsoleStyler {
         return this._ansi256Function.bind(this,ss,bf) as unknown as ConsoleStyle;
     }
 
+    protected _ansi16Function(ss: ConsoleStyleSettings, bf: boolean, c: number): ConsoleStyle {
+
+        const sc = this._colorSettings(Colors.sgrFromC16(c,bf));
+
+        ss=this._settingsOverwrite(ss,sc);
+
+        return this._settingsStyle(ss);
+    }
+
+    protected _ansi16Factory(bf: boolean, nn: string, ss: ConsoleStyleSettings): ConsoleStyle {
+
+        return this._ansi16Function.bind(this,ss,bf) as unknown as ConsoleStyle;
+    }
 }

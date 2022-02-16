@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { ConsoleStyler, ConsoleStylerOptions } from './console-styler';
+import ConsoleStyler, { type ConsoleStylerOptions } from './console-styler';
 import  { envGetter, EnvironmentGetter } from './command-info';
 
 export interface ConsoleStylerThemeOptions {

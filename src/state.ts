@@ -1,4 +1,4 @@
-import { ConsoleStyler } from './console-styler';
+import type ConsoleStyler from './console-styler';
 import * as Colors from './colors';
 
 export enum Modifier {

@@ -4,7 +4,7 @@
 /*                                                                  */
 /********************************************************************/
 
-import { ConsoleStyler, ConsoleStylerOptions } from './console-styler'
+import ConsoleStyler, { type ConsoleStylerOptions } from './console-styler'
 
 export type ColorSupport = false | { hasBasic: boolean, has256: boolean, has16m: boolean }
 

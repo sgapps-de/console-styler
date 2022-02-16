@@ -1,4 +1,4 @@
-import { ConsoleStyler } from '../console-styler';
+import ConsoleStyler from '../console-styler';
 
 describe('Formating Multiple Arguments ...', () => {
 
