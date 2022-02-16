@@ -22,8 +22,12 @@ export class Chalk extends ConsoleStyler {
     }
 }
 
-const chalk = new ConsoleStyler();
-export const chalkStderr = new ConsoleStyler({stderr: true});
+const CONSOLE_STYLER_CHALK_OPTIONS : ConsoleStylerOptions = {
+    format: [ '{', '}', ' ' ]
+};
+
+const chalk = new ConsoleStyler(CONSOLE_STYLER_CHALK_OPTIONS);
+export const chalkStderr = new ConsoleStyler({... CONSOLE_STYLER_CHALK_OPTIONS, stderr: true});
 
 export const supportsColor = level2ColorSupport(chalk.level);
 export const supportsColorStderr = level2ColorSupport(chalkStderr.level);
