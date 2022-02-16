@@ -1,6 +1,6 @@
 {
     "name": "console-styler",
-    "version": "0.0.0",
+    "version": "1.0.0",
     "description": "A Styler for Console Output",
     "keywords": [
         "styling",
@@ -18,6 +18,10 @@
         ".": {
             "import": "./dist/node/esm/console-styler.js",
             "require": "./dist/node/cjs/console-styler.js"
+        },
+        "./chalk": {
+            "import": "./dist/node/esm/chalk.js",
+            "require": "./dist/node/cjs/chalk.js"
         }
     },
     "files": [
