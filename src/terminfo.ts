@@ -1,4 +1,5 @@
 import * as os from 'os';
+import { unzipSync } from 'zlib';
 
 import  { EnvironmentOptions, CommandOptions, 
          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
@@ -25,7 +26,7 @@ export class TermInfo {
 
     termType: string;
 
-    level: number;
+    level: (s: NodeJS.WriteStream) => number;
 
     modifier: Modifier;
 
@@ -39,10 +40,27 @@ export class TermInfo {
 
         this.termType=this._getTermType(cd);
 
-        this.level=opts.level ?? this._getColorLevel(cd);
+        this._level=this._getColorLevel(cd);
+
+        if (opts.level!==undefined || this.termType==='test')
+            this.level=this._levelForce.bind(this);
+        else
+            this.level=this._levelTTY.bind(this);
 
         this.modifier=this._getModifier();        
     }
+
+    protected _levelForce(s: NodeJS.WriteStream): number {
+
+        return this._level;
+    }
+
+    protected _levelTTY(s: NodeJS.WriteStream): number {
+
+        return s.isTTY ? this._level : 0;
+    }
+
+    protected _level: number;
 
     protected _getTermType(cd: TermInfoCtorData): string {
 
@@ -56,10 +74,7 @@ export class TermInfo {
             if (v=cd.env('CONEMUANSI'))
                 return (v==='ON') ? 'conemu-ansi' : 'conemu-dumb';
 
-            return (cd.env('SESSIONNAME')==='Console') ?
-                        'windows-console'
-                    :
-                        'windows-terminal';
+            return (cd.env('SESSIONNAME')==='Console') ? 'windows-console' : 'windows-terminal';
         }
 
         return 'dumb';
@@ -70,8 +85,8 @@ export class TermInfo {
         if (cd.opts.level)
             return cd.opts.level;
 
-        else if (this.level)
-            return this.level;
+        else if (this._level)
+            return this._level;
 
         else if (this.termType==='test')
             return 3;
