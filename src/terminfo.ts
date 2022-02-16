@@ -102,7 +102,6 @@ export class TermInfo {
             return this._level;
 
         const tt = this.termType;
-        console.log('tt',tt)
 
         if (tt==='test')
             return 3;
