@@ -25,16 +25,21 @@ function themeFileStyles(styles: any, f: string) {
 function themeVarStyles(styles: any, v: string, env: EnvironmentGetter ): void {
 
     const vvv: string | undefined = env(v);
-
+    
     if (!vvv) return;
 
-    for (let vv of vvv.split(';')) {
-        vv=vv.trim();
-        if (vv.charAt(0)==='@')
-            themeFileStyles(styles,vv.slice(1));
-        else if (vv.indexOf('=')>=0) {
-            const va = vv.split('=');
-            styles[va[0]]=va[1];
+    if (vvv.charAt(0)==='@') {
+        themeFileStyles(styles,vvv.slice(1));
+    }
+    else {
+        const va = vvv.split(vvv.indexOf(':')>=0 ? ':' : ';');
+
+        for (let vv of va) {
+            vv=vv.trim();
+            if (vv.indexOf('=')>=0) {
+                const va = vv.split('=');
+                styles[va[0]]=va[1];
+            }
         }
     }
 }
