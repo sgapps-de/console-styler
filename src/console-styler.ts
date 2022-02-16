@@ -168,6 +168,8 @@ export interface ConsoleStylerOptions {
 
     term?:        TermInfo | string;
 
+    stderr?:      boolean,
+
     multiFmt?:    boolean,
 
     delimiter?:   RegExp | [ string, string, string] | [string, string],
@@ -225,6 +227,9 @@ export class ConsoleStyler {
     modifier: Modifier;
 
     term:  TermInfo;
+
+    stderr: boolean;
+    out:    NodeJS.WriteStream;
 
     multiFmt: boolean;
     
@@ -328,10 +333,13 @@ export class ConsoleStyler {
             this.term=new TermInfo(tio);
         }
 
-        this.level=opts.level ?? this.term.level;
+        this.stderr=!!opts.stderr;
+        this.out=this.stderr ? process.stderr : process.stdout;
+
+        this.level=opts.level ?? (this.out.isTTY ? this.term.level : 0);
         this.modifier=opts.modifier ?? this.term.modifier;
 
-        this.multiFmt=opts.multiFmt ?? true;
+        this.multiFmt=opts.multiFmt ?? false;
 
         this.byName=this.byName.bind(this);
 
@@ -949,7 +957,7 @@ export class ConsoleStyler {
         }
 
         const esc=this._ctrlUnstyledName('\x1B');
-        if (esc!=='␛') s=s.replace('␛',esc);
+        if (esc!=='␛') s=s.replace(/␛/g,esc);
             
         return s;
     }
