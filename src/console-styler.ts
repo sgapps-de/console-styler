@@ -151,6 +151,7 @@ export type ConsoleStyle = {
     rapidBlink: ConsoleStyle;
     inverse: ConsoleStyle;
     hidden: ConsoleStyle;
+    strikeThrough: ConsoleStyle;
     strikethrough: ConsoleStyle;
     strike: ConsoleStyle;
     overline: ConsoleStyle;
@@ -169,9 +170,9 @@ export type ControlName  = string | ((s: string) => string);
 export interface ConsoleStylerOptions {
 
     level?:       number;
-    modifier?:    Modifier;
 
     term?:        TermInfo | string;
+    modifier?:    Modifier;
 
     stderr?:      boolean,
 
@@ -206,9 +207,10 @@ const CONSOLE_STYLE_MODIFIER: [string, number[]][] = [
     [ 'doubleUnderline', [ Modifier.DOUBLE_UNDERLINE, 0, 0, Modifier.UNDERLINE ] ],
     [ 'dblUl',  [ Modifier.DOUBLE_UNDERLINE, 0, 0, Modifier.UNDERLINE ] ],
     [ 'blink', [ Modifier.BLINK ] ],
-    [ 'rapidBlink', [ Modifier.BLINK, 0, 0, Modifier.BLINK ] ],
+    [ 'rapidBlink', [ Modifier.RAPID_BLINK, 0, 0, Modifier.BLINK ] ],
     [ 'inverse', [ Modifier.INVERSE ] ],
     [ 'hidden', [ Modifier.HIDDEN ] ],
+    [ 'strikeThrough', [ Modifier.STRIKE_THROUGH ] ],
     [ 'strikethrough', [ Modifier.STRIKE_THROUGH ] ],
     [ 'strike', [ Modifier.STRIKE_THROUGH ] ],
     [ 'overline', [ Modifier.OVERLINE ] ],
@@ -306,7 +308,8 @@ export default class ConsoleStyler {
     rapidBlink!: ConsoleStyle;
     inverse!: ConsoleStyle;
     hidden!: ConsoleStyle;
-    strikethrough!: ConsoleStyle;
+    strikeThrough!: ConsoleStyle;
+    strikethrough!: ConsoleStyle; // chalk
     strike!: ConsoleStyle;
     overline!: ConsoleStyle;
 
@@ -380,7 +383,7 @@ export default class ConsoleStyler {
         this.ansi16=this._ansi16Function.bind(this,ANSI_NO_SETTINGS,false);
         this.bgAnsi16=this._ansi16Function.bind(this,ANSI_NO_SETTINGS,true);
 
-        (this as any)['none']=sd.styles['none']=sd._emptyStyle;
+        (this as any)['none']=sd.styles.none=sd._emptyStyle;
         this._styleCache.set(this._settingsCacheName(ANSI_NO_SETTINGS),sd._emptyStyle);
 
         for (const [ n, c ] of CONSOLE_STYLE_COLORS)
@@ -392,7 +395,7 @@ export default class ConsoleStyler {
 
         this._ctorFunctionStyle('reset',this._resetFunc.bind(this),'X');
         this._ctorFunctionStyle('visible',this._visibleFunc.bind(this),'X');
-        this._ctorFunctionStyle('upper',(x: string) => x.toUpperCase(),'SS');
+        this._ctorFunctionStyle('upper',(x: string) => x.toUpperCase(),'SL');
         this._ctorFunctionStyle('lower',(x: string) => x.toLowerCase(),'SS');
         this._ctorFunctionStyle('sgr',this._sgrFunc.bind(this),'X');
         this._ctorFunctionStyle('ctrl',this._ctrlFunc.bind(this),'X');
@@ -425,14 +428,19 @@ export default class ConsoleStyler {
         else           return this._format(this._applyArgs(sx),ANSI_NO_STATE);
     }
 
-    setFormat(fx: [ string, string ] | [ string, string, string ] | RegExp) {
+    setFormat(fx: string | [ string, string ] | [ string, string, string ] | RegExp, fxb?: string, fxc?: string) {
+
+        if (typeof fx==='string') {
+            if (fxb) fx=[fx, fxb, fxc ?? '|'];
+            else     fx=fx.split(' ') as [ string, string, string];
+        }
 
         if (Array.isArray(fx)) {
             const fx2 = fx[2] ?? '|';
             const fxx = fx[1].split('').reduce((r,x) => r.indexOf(x)<0 ? r+x : r,fx2);
             const rx = '(?:' +
                        this._escapeRegExp(fx[0]) +
-                       '([^'+fxx+']+)' + 
+                       '([^'+this._escapeRegExpGroup(fxx)+']+)' + 
                        this._escapeRegExp(fx2) +
                        ')|' +
                        this._escapeRegExp(fx[1]) +
@@ -613,6 +621,13 @@ export default class ConsoleStyler {
                 fx=function(sx: string | StateStringList, cs: ConsoleStyler) {
                     if (typeof sx === 'string') sx=new StateStringList(sx,cs);
                     return (f as ConsoleStyleListFunction)(sx);
+                };
+                break;
+            case 'SL':
+                fx=function(sx: string | StateStringList, cs: ConsoleStyler) {
+                    if (typeof sx === 'string') sx=new StateStringList(sx,cs);
+                    sx.applyStringFunction(f as ConsoleStyleStringFunction);
+                    return sx;
                 };
                 break;
             case 'SS':
@@ -802,6 +817,11 @@ export default class ConsoleStyler {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
+    protected _escapeRegExpGroup(str: string): string {
+
+        return str.replace(/[-[\]\\]/g, '\\$&');
+    }
+
     protected _tFormat(str:TemplateStringsArray, args: any[], s: State): string {
 
         let sf:string = str.join('\uEF33');
@@ -984,6 +1004,11 @@ export default class ConsoleStyler {
         return s;
     }
 
+    protected _factory(f: (s: string | StateStringList, cs: ConsoleStyler) => string): ConsoleStyle {
+
+        return f.bind(this) as unknown as ConsoleStyle;
+    }
+    
     protected _ctrlNameStd(cs: string): string {
 
         const c = cs.charCodeAt(0);
