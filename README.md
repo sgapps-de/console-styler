@@ -360,6 +360,16 @@ console.log(chalk.blue('Hello world!'));
 
 `Console-styler` should be mostly compatible with [chalk](https://www.npmjs.com/package/chalk).
 
+The main difference is, that a `ConsoleStyler` object ist not callable:
+```js
+import chalk1 from 'chalk'
+import chalk2 from 'console-styler/chalk'
+
+chalk1('Hello');      // => 'Hello'
+chalk2('Hello');      // ERROR
+chalk2.none('Hello'); // => 'Hello'
+```
+
 The generated ANSI escape codes are not the same - but should look the same.
 
 This library is somewhat slower than chalk - if you do not need the special features you might be better off with the original.
