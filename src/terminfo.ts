@@ -1,4 +1,5 @@
 import * as os from 'os';
+import { inspect } from 'util';
 
 import  { EnvironmentOptions, CommandOptions, 
          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
@@ -8,13 +9,15 @@ import { Modifier } from './state';
 
 export interface TermInfoOptions {
 
-    termType?: string;
-    env?:      EnvironmentOptions;
-    cmdOpts?:  CommandOptions;
-    level?:    number;
+    term?:      string;
+    env?:       EnvironmentOptions;
+    cmdOpts?:   CommandOptions;
+    level?:     number;
+    levelVars?: string[]; 
+    levelOpts?: string[]; 
 }
 
-export interface TermInfoCtorData {
+interface TermInfoCtorData {
 
     opts:    TermInfoOptions;
     env:     EnvironmentGetter;
@@ -37,26 +40,28 @@ export class TermInfo {
             cmdOpts: optsGetter(opts.cmdOpts),
         };
 
+        this._level=-1;
+
         this.termType=this._getTermType(cd);
 
         this._level=this._getColorLevel(cd);
 
         if (opts.level!==undefined || this.termType==='test')
-            this.level=this._levelForce.bind(this);
+            this.level=this._levelSet.bind(this);
         else
-            this.level=this._levelTTY.bind(this);
+            this.level=this._levelStream.bind(this);
 
         this.modifier=this._getModifier();        
     }
 
-    protected _levelForce(s: NodeJS.WriteStream): number {
+    protected _levelSet(s?: NodeJS.WriteStream): number {
 
         return this._level;
     }
 
-    protected _levelTTY(s: NodeJS.WriteStream): number {
+    protected _levelStream(s?: NodeJS.WriteStream): number {
 
-        return s.isTTY ? this._level : 0;
+        return (!s || s.isTTY) ? this._level : 0;
     }
 
     protected _level: number;
@@ -66,14 +71,7 @@ export class TermInfo {
         let v:  string | undefined;
         let ct: string | undefined;
 
-        if (cd.opts.termType) return cd.opts.termType.toLowerCase();
-
-        if (process.platform === 'win32') {
-            if (v=cd.env('CONEMUANSI'))
-                return (v==='ON') ? 'conemu-ansi' : 'conemu-dumb';
-
-            return (cd.env('SESSIONNAME')==='Console') ? 'windows-console' : 'windows-terminal';
-        }
+        if (cd.opts.term) return cd.opts.term.toLowerCase();
 
         ct=cd.env('COLORTERM')?.toLowerCase();
 
@@ -90,15 +88,93 @@ export class TermInfo {
             return v;
         }
 
-        return ct || 'dumb';
+        if (ct) return ct;
+
+        if (process.platform === 'win32') {
+            if (v=cd.env('CONEMUANSI'))
+                return (v==='ON') ? 'conemu-ansi' : 'conemu-dumb';
+
+            return (cd.env('SESSIONNAME')==='Console') ? 'windows-console' : 'windows-terminal';
+        }
+
+        return 'dumb';
+    }
+
+    protected _levelForce(v: string, d: number = 0): number {
+
+        if (/^[0-3]$/.test(v))
+            return parseInt(v);
+        else if (/truecolor|16m|24bit/i.test(v))
+            return 3;
+        else if (/256|8bit/i.test(v))
+            return 2;
+        else if (/color|4bit/i.test(v))
+            return 1;
+        else
+            return d;
+    }
+
+    protected _getColorFromEnv(cd: TermInfoCtorData): number {
+
+        const va = cd.opts.levelVars ?? this.termType==='test' ? [ 'TEST_FORCE_COLOR' ] : [ 'FORCE_COLOR' ];
+
+        for (let i = va.length-1;i>=0;--i) {
+            let vn: string = va[i];
+            let vt: string;
+            let p: number;
+            if ((p=vn.indexOf('='))>=0) { vt=vn.slice(p+1); vn=vn.slice(0,p); }
+            else                          vt=vn;
+            const vv = cd.env(vn);
+            if (!vv) continue;
+            if (/force/i.test(vt))
+                return this._levelForce(vv);
+            else if (/no/i.test(vt))
+                return 0;
+            else
+                return -1;
+        }
+        
+        return -1;
+    }
+
+    protected _getColorFromOpts(cd: TermInfoCtorData): number {
+
+        const oa = cd.opts.levelOpts ?? this.termType==='test' ? [ 'test-no-color', 'test-color' ] : [ 'no-color', 'color' ];
+
+        for (let i = oa.length-1;i>=0;--i) {
+            let on: string = oa[i];
+            let ot: string;
+            let p: number;
+            if ((p=on.indexOf('='))>=0) { ot=on.slice(p+1); on=on.slice(0,p); }
+            else                          ot=on;
+            const ov = cd.cmdOpts(on);
+            if (ov===undefined || ov===null || ov===false) continue;
+            console.log("Opt:",on,inspect(ov)," ot="+ot);
+            if (/no/i.test(ot))
+                return 0;
+            else if (ot==='?')
+                return -1;
+            else
+                return this._levelForce(ov.toString());
+        }
+        
+        return -1;
     }
 
     protected _getColorLevel(cd: TermInfoCtorData): number {
 
+        let lv: number;
+
         if (cd.opts.level)
             return cd.opts.level;
 
-        else if (this._level)
+        else if ((lv=this._getColorFromOpts(cd))>=0)
+            return lv;
+
+        else if ((lv=this._getColorFromEnv(cd))>=0)
+            return lv;
+
+        else if (this._level>=0)
             return this._level;
 
         const tt = this.termType;
@@ -119,17 +195,8 @@ export class TermInfo {
         else if (tt==='terminator' || tt=='xterm')
             return 3;
 
-        else if (/truecolor|24bit/i.test(this.termType))
-            return 3;
-
-        else if (/256/.test(this.termType))
-            return 2;
-
-        else if (/color/i.test(this.termType))
-            return 1;
-
         else
-            return 0;
+            return this._levelForce(tt);
     }
 
     protected _getModifier() {
