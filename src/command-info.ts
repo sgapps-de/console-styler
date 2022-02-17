@@ -56,11 +56,13 @@ export function envGetter(env: EnvironmentOptions | undefined): EnvironmentGette
 
 function optsObjectGetter(opts: CommandOptionsObject, def: boolean | undefined, on: string): string | boolean | undefined {
 
+    if (on.charAt(0)==='-') on=on.slice(on.charAt(1)==='-' ? 2 : 1);
+
     let ov: any = opts[on];
 
     if (typeof ov === 'function') ov=ov(on);
 
-    if (typeof ov === 'string' || typeof ov === 'boolean')
+    if (typeof ov === 'string' || ov === true)
         return ov;
     else if (ov)
         return (ov as any).toString();
@@ -70,17 +72,28 @@ function optsObjectGetter(opts: CommandOptionsObject, def: boolean | undefined, 
 
 function optsFunctionGetter(opts: CommandOptionsFunction, def: boolean | undefined, on: string): string | boolean | undefined {
 
+    if (on.charAt(0)==='-') on=on.slice(on.charAt(1)==='-' ? 2 : 1);
+
     let ov: any = opts(on);
 
     if (typeof ov === 'string' || typeof ov === 'boolean')
         return ov;
-    else if (ov)
-      return (ov as any).toString();
+    else if (ov!==undefined && ov!==null)
+        return (ov as any).toString();
     else
         return def;
 }
 
 function optsStandardGetter(def: boolean | undefined, on: string): string | boolean | undefined {
+
+    if (on.charAt(0)==='-') on=on.slice(on.charAt(1)==='-' ? 2 : 1);
+
+    for (let i = 2;i<process.argv.length;++i) {
+        let a = process.argv[i];
+        if (a.charAt(0)!=='-') continue;
+        const m = /^-+([^=]+)(=.*)?$/.exec(a);
+        if (m && m[1]===on) return m[2] || true;
+    }
 
     return def;
 }
