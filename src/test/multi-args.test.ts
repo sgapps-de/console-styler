@@ -10,6 +10,21 @@ describe('Formating Multiple Arguments ...', () => {
         expect(cs.sgr(cs.none('None'))).toBe('None');
     });
 
+    it('Convert Number to String', () => {
+        cs.multiFmt=false;
+        expect(cs.none(123)).toBe('123');
+    });
+
+    it('Convert Array to String', () => {
+        cs.multiFmt=false;
+        expect(cs.none(['Foo',123])).toBe('Foo,123');
+    });
+
+    it('Falsey Argument', () => {
+        cs.multiFmt=false;
+        expect(cs.none(0)).toBe('0');
+    });
+
     it('Single Argument (mf=false)', () => {
         cs.multiFmt=false;
         expect(cs.none('Foo')).toBe('Foo');

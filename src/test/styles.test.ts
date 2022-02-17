@@ -2,7 +2,7 @@ import ConsoleStyler from '../console-styler';
 
 const ESCAPE = { '\x1B': '␛' };
 
-describe('Formating with cs.s ...', () => {
+describe('Formating with cs...', () => {
 
   let cs: ConsoleStyler;
 
@@ -130,5 +130,30 @@ describe('Formating with cs.s ...', () => {
   it('Orange Background VI', () => {
     expect(cs.sgr(cs.bg.ansi256(172)('Orange')))
       .toBe('␛[48;5;172mOrange␛[m');
+  });
+
+  it('Reset I', () => {
+    expect(cs.sgr(cs.reset(cs.red('Foo'))))
+      .toBe('Foo');
+  });
+
+  it('Reset II', () => {
+    expect(cs.sgr(cs.red.reset('Foo')))
+      .toBe('Foo');
+  });
+
+  it('Reset III', () => {
+    expect(cs.sgr(cs.reset.blue(cs.red('Foo'))))
+      .toBe('␛[34mFoo␛[m');
+  });
+
+  it('Reset IV', () => {
+    expect(cs.sgr(cs.blue.reset(cs.red('Foo'))))
+      .toBe('Foo');
+  });
+
+  it('Empty String', () => {
+    expect(cs.sgr(cs.red('')))
+      .toBe('');
   });
 });
