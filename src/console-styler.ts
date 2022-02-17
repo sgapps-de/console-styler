@@ -2,16 +2,16 @@ import * as util from 'util';
 
 import * as Colors from './colors';
 
-import  { EnvironmentOptions, CommandOptions } from './command-info';
+import  { type EnvironmentOptions, type CommandOptions } from './command-info';
 
 import { Modifier, State, Settings, StateStringList,
-         ANSI_SGR_REGEXP, ANSI_NO_STATE, ANSI_NO_STATE_FINAL, ANSI_NO_SETTINGS,
+         ANSI_SGR_REGEXP_GLOBAL, ANSI_NO_STATE, ANSI_NO_STATE_FINAL, ANSI_NO_SETTINGS,
          sgrPars2Settings, settingsOverwrite,
         } from './state';
 
-import { TermInfo } from './terminfo';
+import { TermInfo, type TermInfoOptions } from './terminfo';
 
-import { ConsoleStylerSetupTheme, ConsoleStylerThemeOptions } from './theme';
+import { ConsoleStylerSetupTheme, type ConsoleStylerThemeOptions } from './theme';
 
 export type ConsoleStyleFunction = (s: string | StateStringList, cs: ConsoleStyler) => string | StateStringList;
 export type ConsoleStyleStringFunction = (s: string) => string;
@@ -171,7 +171,7 @@ export interface ConsoleStylerOptions {
 
     level?:       number;
 
-    term?:        TermInfo | string;
+    term?:        TermInfo | TermInfoOptions | string;
     modifier?:    Modifier;
 
     stderr?:      boolean,
@@ -334,11 +334,15 @@ export default class ConsoleStyler {
         if (opts.term instanceof TermInfo)
             this.term=opts.term;
         else {
-            const tio = {
-                termType: opts.term,
-                env: opts.env,
-                cmdOpts: opts.cmdOpts,
-            };
+            let tio: TermInfoOptions;
+            if (typeof opts.term === 'string')
+                tio={ term: opts.term };
+            else if (typeof opts.term === 'object')
+                tio={ ...opts.term };
+            else
+                tio={};
+            if (!tio.env) tio.env=opts.env;
+            if (!tio.cmdOpts) tio.cmdOpts=opts.cmdOpts;
             this.term=new TermInfo(tio);
         }
 
@@ -913,7 +917,7 @@ export default class ConsoleStyler {
 
         if (Array.isArray(sx)) {
             if (sx.length===1)
-                sx=sx[0];
+                sx=sx[0].toString();
             else if (!this.multiFmt || sx[0].indexOf('%')<0)
                 sx=sx.join(' ');
             else
@@ -948,7 +952,7 @@ export default class ConsoleStyler {
     protected _resetFunc(s: string | StateStringList, cs: ConsoleStyler): string | StateStringList {
 
         if (typeof s === 'string') {
-            s=s.replace(ANSI_SGR_REGEXP,'');
+            s=s.replace(ANSI_SGR_REGEXP_GLOBAL,'');
         }
         else {
             s.reset();
