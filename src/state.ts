@@ -62,6 +62,7 @@ export const ANSI_NO_SETTINGS: Settings = { ms: 0, mm: 0, mr: 0 };
 export const ANSI_RESET_SETTINGS: Settings = { fg: '39', bg: '39', ms: 0, mm: 0, mr: Modifier.STANDARD };
 
 export const ANSI_SGR_REGEXP = /\x1B\[([0-9;]*)m/;
+export const ANSI_SGR_REGEXP_GLOBAL = /\x1B\[([0-9;]*)m/g;
 
 const escSeqCache      = new Map<string,Settings>();
 
