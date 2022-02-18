@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import ConsoleStyler, { type ConsoleStylerOptions } from './console-styler';
-import  { envGetter, EnvironmentGetter } from './command-info';
+import  { type EnvironmentOptions, 
+          envGetter, type EnvironmentGetter
+        } from './command-info';
 
 export interface ConsoleStylerThemeOptions {
 
@@ -8,6 +10,8 @@ export interface ConsoleStylerThemeOptions {
 
     styles?: { [key: string]: string | null } | string[];
     
+    env?:       EnvironmentOptions;
+
 }
 
 function themeFileStyles(styles: any, f: string) {
@@ -44,6 +48,16 @@ function themeVarStyles(styles: any, v: string, env: EnvironmentGetter ): void {
     }
 }
 
+function nameArray(nx: string | string[] | undefined, d: string | string[]): string[] {
+
+    let nn = nx ?? d;
+
+    if (Array.isArray(nn))
+        return nn;
+    else
+        return nn.split(/[,\s]\s*/g).filter(n => !!n);
+}
+
 export function ConsoleStylerSetupTheme(cs: ConsoleStyler, cso: ConsoleStylerOptions): void {
 
     if (!cso.theme) return;
@@ -67,13 +81,11 @@ export function ConsoleStylerSetupTheme(cs: ConsoleStyler, cso: ConsoleStylerOpt
     }
 
     if (tOpts.var) {
-        const env: EnvironmentGetter = envGetter(cso.env);
-        if (Array.isArray(tOpts.var)) {
-            for (const v of tOpts.var)
-                themeVarStyles(styles,v,env);
+        const env: EnvironmentGetter = envGetter(tOpts.env ?? cso.env);
+        const vv = nameArray(tOpts.var,[]);
+        for (const v of vv) {
+            themeVarStyles(styles,v,env);
         }
-        else
-            themeVarStyles(styles,tOpts.var,env);
     }
 
     for (const s in styles) {

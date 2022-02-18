@@ -1,8 +1,8 @@
 import * as os from 'os';
 import { inspect } from 'util';
 
-import  { EnvironmentOptions, CommandOptions, 
-         envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
+import  { type EnvironmentOptions, type CommandOptions, 
+          envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
         } from './command-info';
 
 import { Modifier } from './state';        
@@ -13,8 +13,8 @@ export interface TermInfoOptions {
     env?:       EnvironmentOptions;
     cmdOpts?:   CommandOptions;
     level?:     number;
-    levelVars?: string[]; 
-    levelOpts?: string[]; 
+    levelOpts?: string | string[]; 
+    levelVars?: string | string[]; 
 }
 
 interface TermInfoCtorData {
@@ -110,13 +110,25 @@ export class TermInfo {
             return 2;
         else if (/color|4bit/i.test(v))
             return 1;
+        else if (/no/i.test(v))
+            return 0;
         else
             return d;
     }
 
+    protected _nameArray(nx: string | string[] | undefined, d: string, dt: string): string[] {
+
+        let nn = nx ?? (this.termType==='test' ? dt : d);
+
+        if (Array.isArray(nn))
+            return nn;
+        else
+            return nn.split(/[,\s]\s*/g).filter(n => !!n);
+    }
+
     protected _getColorFromEnv(cd: TermInfoCtorData): number {
 
-        const va = cd.opts.levelVars ?? this.termType==='test' ? [ 'TEST_FORCE_COLOR' ] : [ 'FORCE_COLOR' ];
+        let va = this._nameArray(cd.opts.levelVars,'FORCE_COLOR', 'TEST_FORCE_COLOR');
 
         for (let i = va.length-1;i>=0;--i) {
             let vn: string = va[i];
@@ -139,7 +151,7 @@ export class TermInfo {
 
     protected _getColorFromOpts(cd: TermInfoCtorData): number {
 
-        const oa = cd.opts.levelOpts ?? this.termType==='test' ? [ 'test-no-color', 'test-color' ] : [ 'no-color', 'color' ];
+        let oa = this._nameArray(cd.opts.levelOpts,'np-color color', 'test-no-color test-color');
 
         for (let i = oa.length-1;i>=0;--i) {
             let on: string = oa[i];
