@@ -2,11 +2,29 @@
     "name": "console-styler",
     "version": "1.0.0",
     "description": "A Styler for Console Output",
-    "keywords": [
-        "styling",
-        "console"
-    ],
     "author": "sgapps.de <webmaster@sgapps.de>",
+    "keywords": [
+		"ansi",
+        "chalk",
+		"cli",
+    	"color",
+		"colors",
+		"colour",
+		"command-line",
+		"console",
+		"formatting",
+		"log",
+		"logging",
+		"rgb",
+		"shell",
+		"string",
+		"style",
+		"styles",
+		"terminal",
+		"theme",
+		"tty",
+		"xterm"
+	],
     "repository": {
         "type": "git",
         "url": "https://github.com/sgapps-de/console-styler"
