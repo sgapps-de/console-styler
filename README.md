@@ -118,7 +118,7 @@ Type: string or array of strings
 
 Overwrite the default formatting delimiters. See `setFormat` below
 
-#### Option 'stderr'
+#### Option `stderr`
 
 Type: boolean
 
@@ -126,13 +126,159 @@ Specifies, if the `ConsoleStyler` object will be used with `stderr` or `stdout`.
 
 When the intended output stream is redirected, the color support will be disabled.
 
+#### Option `env`
+
+Type: object or function
+
+Override for `process.env` to specify an alternative environment. When given a function this must be of the form
+```js
+tsOpts.env = function (v: string): string | undefined {
+    // ...
+}
+```
+and return the value of the variable `v`.
+
+#### Option `cmdOpts`
+
+Type: object or function
+
+Object or function to accees the command line options of the app. The signature of the function must be
+```js
+csOpts.cmdOpts = function (o: string): string | boolean {
+    // ...
+}
+```
+and it must return the value of the option `o`. For example:
+```sh
+$ myapp --color=truecolor --theme=@myTheme -a
+```
+```js
+opt('color') => 'truecolor'
+opt('theme') => '@myTheme'
+opt('a') => true
+opt('b') => false
+```
+
+Alternatively an object may be specified:
+```js
+csOpts.cmdOpts = {
+    color: 'truecolor',
+    theme: '@myTheme',
+    a: true
+}
+```
+
+#### Option `theme`
+
+Type: object
+
+This option defines a theme of styles. This may be overridden by environment variables.
+
+##### Option `theme.styles`
+
+Type: object
+
+The object `theme.styles` defines the styles used by the application and the default definition of these styles. For example:
+```js
+csOpts.theme.styles = {
+    err:  'red.bold.underline',
+    warn: '#CC6600',
+    okay: 'green'
+}
+```
+
+##### Option `theme.var`
+
+Type: string or string[]
+
+This option defines a list of variables that may be used to override the theme. Multiple variables are possible with increasing priority:
+```js
+csOpts.theme.var = [ 'COLOR_THEME', 'MYAPP_THEME' ];
+// or
+csOpts.theme.var = 'COLOR_THEME, MYAPP_THEME';
+```
+
+```sh
+$ export MYAPP_THEME=err=red.blink:warn=#CC0066
+$ myapp
+```
+
+##### Option `theme.env`
+
+Type: object or function
+
+Special environment for the theme. Default is the option `env` of the parent object or `process.env`
+
+##### Option `theme.cmdOpts`
+
+Type: object or function
+
+Special command line optioons for the theme. Default is the option `cmdOpts` of the parent object.
+
+#### Option `term`
+
+Type: string or object
+
+A string `'xterm'` is equivalent to `{ term: 'xterm' }`
+
+##### Option `term.term`
+
+Type: string
+
+The type of the terminal - e.g. `'xterm'` or `'windows-terminal'`. If not given it is taken from the environment variable `TERM` or other available information.
+
+##### Option `term.level`
+
+Type: one of 0, 1, 2 or 3.
+
+Overwrite color support detection for the terminal. See above.
+
+##### Option `term.levelOpts`
+
+Type: string[]
+
+Default: `[ 'no-color', 'color' ]`
+
+Program options to check for color support overwrites. Options take precedence over environment variables. Possible values for the color option are:
+
+- `...truecolor...` -> level=3 - full RGB support
+- `...24bit...` -> level=3 - full RGB support
+- `...16m...` -> level=3 - full RGB support
+- `3` -> level=3 - full RGB support
+- `...256color...`  -> level=2 - 256 color support
+- `2`  -> level=2 - 256 color support
+- `...color...`     -> level=1 - 16 color support
+- `1` -> level=1 - 16 color support
+- `...no...` -> level=0 - no color support
+- `0` -> level=0 - no color support
+
+##### Option `term.levelVars`
+
+Type: string[]
+
+Default: `[ 'FORCE_COLOR' ]`
+
+Environment variables to check for color support overwrites. 
+
+##### Option `term.env`
+
+Type: object or function
+
+Special environment for the terminal. Default is the option `env` of the parent object or `process.env`
+
+##### Option `term.cmdOpts`
+
+Type: object or function
+
+Special command line optioons for the terminal. Default is the option `cmdOpts` of the parent object.
+
 ### ConsoleStyler.\<style>[.\<style>...](string, [string...])`
 ```js
 cs.red.bold.underline('Hello', 'world');`
 ```
 Chain [styles](#styles) and call the last one as a method with a string argument. Order doesn't matter, and later styles take precedent in case of a conflict. This simply means that `cs.red.yellow.green` is equivalent to `cs.green`.
 
-Multiple arguments will be separated by space.
+Multiple arguments will be separated by space. Arguments other than strings will be converted.
 
 Styles defined with alias must be prefixed with `a.`:
 
