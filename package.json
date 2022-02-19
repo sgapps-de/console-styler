@@ -72,6 +72,7 @@
         "build-test": "run-s build test:build",
         "test:cover": "jest --config jest/config.ts --coverage",
         "test:prod": "npm run lint && npm run test -- --no-cache",
+        "adhoc": "tsc-check && node lib/adhoc.js",
         "demo": "tsc-check && node lib/demo.js",
         "bench:1": "tsc-check && node lib/bench/bench1.js",
         "bench:2": "tsc-check && node lib/bench/bench2.js",
