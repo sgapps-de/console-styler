@@ -34,7 +34,8 @@ export enum Modifier {
 
     RESET            = STANDARD,
 
-    ALL              = STANDARD | SPECIAL
+    ALL              = STANDARD | SPECIAL,
+    FACTOR           = ALL + 1,
 }
 
 export interface ModifierSettings {
@@ -379,21 +380,21 @@ export function stateModifiersShow(m: number): string {
 
     let r: string = '';
 
-    if (m&Modifier.BOLD) r=r+'B';
-    if (m&Modifier.DIM) r=r+'D';
-    if (m&Modifier.ITALIC) r=r+'I';
-    if (m&Modifier.UNDERLINE) r=r+'U';
-    if (m&Modifier.DOUBLE_UNDERLINE) r=r+'Ü';
-    if (m&Modifier.BLINK) r=r+'K';
-    if (m&Modifier.INVERSE) r=r+'V';
-    if (m&Modifier.HIDDEN) r=r+'H';
-    if (m&Modifier.STRIKE_THROUGH) r=r+'S';
-    if (m&Modifier.OVERLINE) r=r+'O';
-    if (m&Modifier.FINAL) r=r+'@';
-    if (m&Modifier.NOT_MODIFIER) r=r+'!';
-    if (m&Modifier.BACKGROUND) r=r+'b';
-    if (m&Modifier.BRIGHT) r=r+'*';
-    if (m&Modifier.DARK) r=r+'.';
+    if (m&Modifier.BOLD) r+='B';
+    if (m&Modifier.DIM) r+='D';
+    if (m&Modifier.ITALIC) r+='I';
+    if (m&Modifier.UNDERLINE) r+='U';
+    if (m&Modifier.DOUBLE_UNDERLINE) r+='Ü';
+    if (m&Modifier.BLINK) r+='K';
+    if (m&Modifier.INVERSE) r+='V';
+    if (m&Modifier.HIDDEN) r+='H';
+    if (m&Modifier.STRIKE_THROUGH) r+='S';
+    if (m&Modifier.OVERLINE) r+='O';
+    if (m&Modifier.FINAL) r+='@';
+    if (m&Modifier.NOT_MODIFIER) r+='!';
+    if (m&Modifier.BACKGROUND) r+='b';
+    if (m&Modifier.BRIGHT) r+='*';
+    if (m&Modifier.DARK) r+='.';
     
     return r;
 }
@@ -560,7 +561,7 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
             sr=sr+'49;';
     }
 
-//  console.log('Make:',ansiStateShow(s),'->',ansiStateShow(ss),'->',sr);
+//  console.log('Make:',stateShow(s),'->',stateShow(ss),'->',sr);
 
     if (sr && !ss.fg && !ss.bg && !(ss.mm & Modifier.STANDARD)) return '\x1B[m';
 
