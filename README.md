@@ -23,7 +23,7 @@ npm install console-styler
 ## Usage
 
 ```js
-import ConsoleStyler from 'console-styler';
+import { ConsoleStyler } from 'console-styler';
 const cs = new ConsoleStyler;
 const log = console.log;
 
@@ -73,14 +73,16 @@ log(cs.f(`{{underline|Hello ${w1}!}}`)));
 Special styles may be defined:
 ```js
 cs.alias('err','red.underline');
+/* or */ cs.err=cs.red.underline;
 cs.alias('warn','#CC6600');
+/* or */ cs.warn=cs.hex('#CC6600');
 
-log(cs.a.err('ERROR'));
+log(cs.err('ERROR'));
 log(cs.f`{{err|ERROR}}`);
 
-log(cs.a.warn('Warning'));
-log(cs.underline.a.warn('Warning'));
-log(cs.a.warn.underline('Warning'));
+log(cs.warn('Warning'));
+log(cs.underline.warn('Warning'));
+log(cs.warn.underline('Warning'));
 log(cs.f`{{warn|Warning}}`);
 ```
 
@@ -95,7 +97,7 @@ log(cs.red.sgr('Red'))
 ### Constructor
 
 ```js
-import ConsoleStyler from 'console-styler';
+import { ConsoleStyler } from 'console-styler';
 const csOpts = {...};
 const cs = new ConsoleStyler(csOpts);
 ```
@@ -280,13 +282,6 @@ Chain [styles](#styles) and call the last one as a method with a string argument
 
 Multiple arguments will be separated by space. Arguments other than strings will be converted.
 
-Styles defined with alias must be prefixed with `a.`:
-
-```js
-cs.alias('err',cs.red);
-log(cs.a.err('ERROR'));
-```
-
 ### ConsoleStyler.f(string, [string...])
 
 Formatting a string with inline styles:
@@ -333,7 +328,7 @@ With the help of `alias` one can define own styles. These may be accessed via `c
 ```js
 cs.alias('orange','#CC6600');
 
-log(cs.a.orange('Hello!'));
+log(cs.orange('Hello!'));
 cs.f`{{orange.underline|Hello again!}}`);
 
 cs.alias('warning','orange.blink');
@@ -346,6 +341,14 @@ cs.alias({
     'orange': '#CC6600',
     'lime':   '#BFFF00'
 })
+```
+
+Also direct assignment of styles (not strings) is supported:
+```js
+cs.lime=cs.hex('#BFFF00');
+
+log(cs.lime('Hello!'));
+cs.f`{{underline.lime|Hello again!}}`);
 ```
 
 ### ConsoleStyler.alias(name, function, type = 'S')
@@ -396,6 +399,16 @@ cs.alias('myLower',x => x.toLowerCase(),'SS');
 - `hidden` - Print the text but make it invisible.
 - `visible` - Print the text only for a color level above zero. Can be useful for things that are purely cosmetic.
 - `not` - turn the following modifier off - may be used in nested styles.
+- `final` - finalize the stylized string. Nested `not` may not work
+
+```js
+const s1 = cs.not.strike(' Bar ');
+console.log("s1:",cs.strike('Foo'+s1+'Baz'));
+const s2 = cs.final(cs.not.strike(' Bar '));
+console.log("s2:",cs.strike('Foo'+s2+'Baz'));
+```
+s1: ~~Foo~~ Bar ~~Baz~~<br>
+s2: ~~Foo Bar Baz~~
 
 ### Colors
 
@@ -505,16 +518,6 @@ console.log(chalk.blue('Hello world!'));
 ```
 
 `Console-styler` should be mostly compatible with [chalk](https://www.npmjs.com/package/chalk).
-
-The main difference is, that a `ConsoleStyler` object ist not callable:
-```js
-import chalk1 from 'chalk'
-import chalk2 from 'console-styler/chalk'
-
-chalk1('Hello');      // => 'Hello'
-chalk2('Hello');      // ERROR
-chalk2.none('Hello'); // => 'Hello'
-```
 
 The generated ANSI escape codes are not the same - but should look the same.
 
