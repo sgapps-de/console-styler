@@ -1,4 +1,4 @@
-import ConsoleStyler from '../console-styler';
+import { ConsoleStyler } from '../console-styler';
 import { Modifier } from '../state';
 
 const ESCAPE = { '\x1B': '␛' };
@@ -9,8 +9,9 @@ describe('Formating with all Modifiers ...', () => {
 
   it('new ConsoleStyler', () => {
     cs=new ConsoleStyler({ modifier: Modifier.STANDARD, ctrlName: ESCAPE });
-    expect(cs instanceof ConsoleStyler).toBe(true);
-    expect(cs.sgr(cs.none('None'))).toBe('None');
+    expect(cs.level).toBe(3);
+    expect(cs.modifier).toBe(Modifier.STANDARD);
+    expect(cs.sgr(cs('None'))).toBe('None');
   });
 
   it('Blue with Bold Part', () => {
@@ -90,8 +91,7 @@ describe('Formating without Double Underline ...', () => {
   
     it('new ConsoleStyler', () => {
       cs=new ConsoleStyler({ modifier: (Modifier.STANDARD & ~Modifier.DOUBLE_UNDERLINE), ctrlName: ESCAPE });
-      expect(cs instanceof ConsoleStyler).toBe(true);
-      expect(cs.sgr(cs.none('None'))).toBe('None');
+      expect(cs.sgr(cs('None'))).toBe('None');
     });
   
     it('Blue with Double Underlined Part', () => {
@@ -126,8 +126,7 @@ describe('Formating with "not" ...', () => {
   
     it('new ConsoleStyler', () => {
       cs=new ConsoleStyler({ modifier: Modifier.STANDARD, ctrlName: ESCAPE });
-      expect(cs instanceof ConsoleStyler).toBe(true);
-      expect(cs.sgr(cs.none('None'))).toBe('None');
+      expect(cs.sgr(cs('None'))).toBe('None');
     });
   
     it('Not Underlined', () => {
@@ -140,9 +139,14 @@ describe('Formating with "not" ...', () => {
             .toBe('Foo');
     });
 
-    it('Not Underlined Part', () => {
+    it('Not Underlined Part I', () => {
         expect(cs.sgr(cs.underline('Foo '+cs.not.underline('Bar')+' Baz')))
-            .toBe('␛[4mFoo ␛[24mBar␛[4m Baz␛[m');
+            .toBe('␛[4mFoo ␛[mBar␛[4m Baz␛[m');
+    });
+
+    it('Not Underlined Part II', () => {
+      expect(cs.sgr(cs.blue.underline('Foo '+cs.not.underline('Bar')+' Baz')))
+          .toBe('␛[4;34mFoo ␛[24mBar␛[4m Baz␛[m');
     });
 
     it('Not Underlined (cs.fx)', () => {

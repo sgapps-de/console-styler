@@ -8,21 +8,16 @@ describe('Chalk Style Formating ...', () => {
   });
   
   it('Orange Text I', () => {
-    expect(chalk.sgr(chalk.a['#CC6600']('Orange')))
+    expect(chalk.sgr(chalk.hex('#CC6600')('Orange')))
       .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
   });
   
   it('Orange Text II', () => {
-    expect(chalk.sgr(chalk.a['#C60']('Orange')))
-      .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
-  });
-  
-  it('Orange Text III', () => {
     expect(chalk.sgr(chalk.hex('#C60')('Orange')))
       .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
   });
   
-  it('Orange Text IV', () => {
+  it('Orange Text III', () => {
     expect(chalk.sgr(chalk.rgb(204,102,0)('Orange')))
       .toBe('\\x1B[38;2;204;102;0mOrange\\x1B[m');
   });

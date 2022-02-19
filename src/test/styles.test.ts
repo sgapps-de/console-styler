@@ -1,4 +1,4 @@
-import ConsoleStyler from '../console-styler';
+import { ConsoleStyler } from '../console-styler';
 
 const ESCAPE = { '\x1B': '␛' };
 
@@ -8,7 +8,7 @@ describe('Formating with cs...', () => {
 
   it('new ConsoleStyler', () => {
     cs=new ConsoleStyler({ ctrlName: ESCAPE });
-    expect(cs instanceof ConsoleStyler).toBe(true);
+    expect(cs.sgr(cs('None'))).toBe('None');
     expect(cs.sgr(cs.none('None'))).toBe('None');
   });
 
@@ -23,15 +23,15 @@ describe('Formating with cs...', () => {
   });
   
   it('Orange Text I', () => {
-    expect(cs.sgr(cs.a['#CC6600']('Orange')))
+    expect(cs.sgr(cs.n('#CC6600')('Orange')))
       .toBe('␛[38;2;204;102;0mOrange␛[m');
   });
   
   it('Orange Text II', () => {
-    expect(cs.sgr(cs.a['#C60']('Orange')))
+    expect(cs.sgr(cs.n('#C60')('Orange')))
       .toBe('␛[38;2;204;102;0mOrange␛[m');
   });
-  
+
   it('Orange Text III', () => {
     expect(cs.sgr(cs.hex('#C60')('Orange')))
       .toBe('␛[38;2;204;102;0mOrange␛[m');
@@ -98,7 +98,7 @@ describe('Formating with cs...', () => {
   });
 
   it('Green Background III', () => {
-    expect(cs.sgr(cs.a['bg.green']('Green')))
+    expect(cs.sgr(cs.n('bg.green')('Green')))
       .toBe('␛[42mGreen␛[m');
   });
 

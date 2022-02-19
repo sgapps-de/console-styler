@@ -1,4 +1,4 @@
-import ConsoleStyler from '../console-styler';
+import { ConsoleStyler } from '../console-styler';
 
 const ESCAPE = { '\x1B': '␛' };
 
@@ -19,18 +19,39 @@ const TEST_ENV = {
     'TERM': 'test'
 };
 
+describe('Formating with alias', () => {
+
+  let cs: ConsoleStyler;
+
+  it('new ConsoleStyler', () => {
+    cs=new ConsoleStyler({ ctrlName: ESCAPE });
+    expect(cs('None')).toBe('None');
+    cs.alias('orange','#CC6600');
+    cs.err=cs.red.underline;
+  });
+
+  it('Orange Text', () => {
+    expect(cs.sgr(cs.orange('Orange')))
+      .toBe('␛[38;2;204;102;0mOrange␛[m');
+  });
+  
+  it('Error', () => {
+    expect(cs.sgr(cs.err('ERROR')))
+      .toBe('␛[4;31mERROR␛[m');
+  });
+})
+
 describe('Formating with a Theme', () => {
 
   let cs: ConsoleStyler;
 
   it('new ConsoleStyler', () => {
     cs=new ConsoleStyler({ ctrlName: ESCAPE, theme });
-    expect(cs instanceof ConsoleStyler).toBe(true);
-    expect(cs.sgr(cs.none('None'))).toBe('None');
+    expect(cs('None')).toBe('None');
   });
 
   it('Error I', () => {
-    expect(cs.sgr(cs.a.err('ERROR')))
+    expect(cs.sgr(cs.err('ERROR')))
       .toBe('␛[31mERROR␛[m');
   });
   
@@ -40,7 +61,7 @@ describe('Formating with a Theme', () => {
   });
   
   it('Warning I', () => {
-    expect(cs.sgr(cs.a.warn('Warning')))
+    expect(cs.sgr(cs.warn('Warning')))
       .toBe('␛[38;2;204;102;0mWarning␛[m');
   });
   
@@ -50,7 +71,7 @@ describe('Formating with a Theme', () => {
   });
   
   it('Message I', () => {
-    expect(cs.sgr(cs.a.msg('Message')))
+    expect(cs.sgr(cs.msg('Message')))
       .toBe('␛[4mMessage␛[m');
   });
   
@@ -66,12 +87,11 @@ describe('Formating with a Theme - Environment Overwrite', () => {
 
   it('new ConsoleStyler', () => {
     cs=new ConsoleStyler({ ctrlName: ESCAPE, theme, env: TEST_ENV });
-    expect(cs instanceof ConsoleStyler).toBe(true);
-    expect(cs.sgr(cs.none('None'))).toBe('None');
+    expect(cs('None')).toBe('None');
   });
 
   it('Message', () => {
-    expect(cs.sgr(cs.a.msg('Message')))
+    expect(cs.sgr(cs.msg('Message')))
       .toBe('␛[32mMessage␛[m');
   });
   

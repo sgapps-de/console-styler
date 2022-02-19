@@ -1,4 +1,4 @@
-import ConsoleStyler from '../console-styler';
+import { ConsoleStyler } from '../console-styler';
 
 describe('Formating Multiple Arguments ...', () => {
 
@@ -6,8 +6,7 @@ describe('Formating Multiple Arguments ...', () => {
 
     it('New ConsoleStyler', () => {
         cs=new ConsoleStyler({});
-        expect(cs instanceof ConsoleStyler).toBe(true);
-        expect(cs.sgr(cs.none('None'))).toBe('None');
+        expect(cs('None')).toBe('None');
     });
 
     it('Convert Number to String', () => {

@@ -1,4 +1,4 @@
-import ConsoleStyler from '../console-styler';
+import { ConsoleStyler } from '../console-styler';
 
 const ESCAPE = { '\x1B': '␛' };
 
@@ -8,8 +8,7 @@ describe('Formating of "\\n"...', () => {
 
     it('new ConsoleStyler', () => {
         cs = new ConsoleStyler({ ctrlName: ESCAPE });
-        expect(cs instanceof ConsoleStyler).toBe(true);
-        expect(cs.sgr(cs.none('None'))).toBe('None');
+        expect(cs('None')).toBe('None');
     });
 
     it('Red Text', () => {
@@ -64,8 +63,7 @@ describe('Formating of "\\r\\n"...', () => {
 
     it('new ConsoleStyler', () => {
         cs = new ConsoleStyler({ ctrlName: ESCAPE });
-        expect(cs instanceof ConsoleStyler).toBe(true);
-        expect(cs.sgr(cs.none('None'))).toBe('None');
+        expect(cs('None')).toBe('None');
     });
 
     it('Red Text', () => {
