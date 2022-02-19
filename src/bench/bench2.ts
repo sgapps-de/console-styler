@@ -1,5 +1,5 @@
 import benny from 'benny';
-import ConsoleStyler from '../console-styler';
+import { ConsoleStyler } from '../console-styler';
 import chalk from 'chalk';
 
 let cs: ConsoleStyler = new ConsoleStyler({});
@@ -18,7 +18,7 @@ async function bench() {
         }),
 
         benny.add('Console styler', () => {
-            let s = cs.a.underline('Hallo '+cs.a.red('Silvan'));
+            let s = cs.underline('Hallo '+cs.red('Silvan'));
         }),
 
         benny.cycle(),
