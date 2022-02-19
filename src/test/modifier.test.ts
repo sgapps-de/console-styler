@@ -129,6 +129,21 @@ describe('Formating with "not" ...', () => {
       expect(cs.sgr(cs('None'))).toBe('None');
     });
   
+    it('Not Strike', () => {
+        expect(cs.sgr(cs.not.strike('Foo')))
+            .toBe('␛[209mFoo␛[m');
+    });
+
+    it('Not Strike Final', () => {
+        expect(cs.sgr(cs.not.strike.final('Foo')))
+            .toBe('Foo');
+    });
+
+    it('Not Strike Final II', () => {
+      expect(cs.sgr(cs.final(cs.not.strike('Foo'))))
+          .toBe('Foo');
+    });
+
     it('Not Underlined', () => {
         expect(cs.sgr(cs.not.underline('Foo')))
             .toBe('␛[204mFoo␛[m');
