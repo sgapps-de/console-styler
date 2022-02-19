@@ -1,4 +1,4 @@
-import ConsoleStyler from './console-styler';
+import { ConsoleStyler } from './console-styler';
 import { inspect } from 'util';
 
 const cs=new ConsoleStyler({ format: ['(', ')', ':' ] });

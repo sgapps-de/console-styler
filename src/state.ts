@@ -1,4 +1,5 @@
-import type ConsoleStyler from './console-styler';
+// import type ConsoleStyler from './console-styler';
+import { type ConsoleStylerBase } from './console-styler';
 import * as Colors from './colors';
 
 export enum Modifier {
@@ -93,43 +94,53 @@ export function sgrPars2Settings(seqPars: string, mx: Modifier = Modifier.STANDA
             case 1:
                 mm |= Modifier.BOLD_DIM;
                 ms = (ms & ~Modifier.DIM) | Modifier.BOLD;
+                mr &= (~Modifier.BOLD_DIM);
                 break;
             case 2:
                 mm |= Modifier.BOLD_DIM;
                 ms = (ms & ~Modifier.BOLD) | Modifier.DIM;
+                mr &= (~Modifier.BOLD_DIM);
                 break;
             case 3:
                 mm |= Modifier.ITALIC;
                 ms |= Modifier.ITALIC;
+                mr &= (~Modifier.ITALIC);
                 break;
             case 4:
                 mm |= Modifier.ANY_UNDERLINE;
                 ms = (ms & ~Modifier.DOUBLE_UNDERLINE) | Modifier.UNDERLINE;
+                mr &= (~Modifier.ANY_UNDERLINE);
                 break;
             case 5:
                 mm |= Modifier.ANY_BLINK;
                 ms = (ms & ~Modifier.RAPID_BLINK) | Modifier.BLINK;
+                mr &= (~Modifier.ANY_BLINK);
                 break;
             case 6:
                 mm |= Modifier.ANY_BLINK;
                 ms = (ms & ~Modifier.BLINK) | Modifier.RAPID_BLINK;
+                mr &= (~Modifier.ANY_BLINK);
                 break;
             case 7:
                 mm |= Modifier.INVERSE;
                 ms |= Modifier.INVERSE;
+                mr &= (~Modifier.INVERSE);
                 break;
             case 8:
                 mm |= Modifier.HIDDEN;
                 ms |= Modifier.HIDDEN;
+                mr &= (~Modifier.HIDDEN);
                 break;
             case 9:
                 mm |= Modifier.STRIKE_THROUGH;
                 ms |= Modifier.STRIKE_THROUGH;
+                mr &= (~Modifier.STRIKE_THROUGH);
                 break;
             case 21:
                 if (mx & Modifier.DOUBLE_UNDERLINE) {
                     mm |= Modifier.ANY_UNDERLINE;
                     ms = (ms & ~Modifier.UNDERLINE) | Modifier.DOUBLE_UNDERLINE;
+                    mr &= (~Modifier.ANY_UNDERLINE);
                 }
                 else {
                     mm &= (~Modifier.BOLD);
@@ -175,6 +186,7 @@ export function sgrPars2Settings(seqPars: string, mx: Modifier = Modifier.STANDA
             case 53:
                 mm |= Modifier.OVERLINE;
                 ms |= Modifier.OVERLINE;
+                mr &= (~Modifier.OVERLINE);
                 break;
             case 55:
                 mm &= (~Modifier.OVERLINE);
@@ -289,8 +301,8 @@ export function settingsOverwrite(s1: Settings, s2: Settings): Settings {
     }
 
     if (s.ms&Modifier.NOT_MODIFIER) {
-        s.mm=(s.mm | s2.mm) & (~Modifier.NOT_MODIFIER);
-        s.ms=(s.ms & (~s2.mm)) & (~Modifier.NOT_MODIFIER);
+        s.mm=(s.mm | s2.ms) & (~Modifier.NOT_MODIFIER);
+        s.ms=(s.ms & (~s2.ms)) & (~Modifier.NOT_MODIFIER);
     }
     else {
         s.mm=s.mm | s2.mm;
@@ -371,6 +383,7 @@ export function stateModifiersShow(m: number): string {
     if (m&Modifier.DIM) r=r+'D';
     if (m&Modifier.ITALIC) r=r+'I';
     if (m&Modifier.UNDERLINE) r=r+'U';
+    if (m&Modifier.DOUBLE_UNDERLINE) r=r+'Ü';
     if (m&Modifier.BLINK) r=r+'K';
     if (m&Modifier.INVERSE) r=r+'V';
     if (m&Modifier.HIDDEN) r=r+'H';
@@ -556,10 +569,10 @@ export function sgrMakeState(s: State, ss: State, mx: Modifier = Modifier.STANDA
 
 export class StateStringList {
 
-    styler: ConsoleStyler;
+    styler: ConsoleStylerBase;
     parts: StateStringParts;
 
-    constructor(s: string, cs: ConsoleStyler)
+    constructor(s: string, cs: ConsoleStylerBase)
 
     {   this.styler=cs;
         this._initialState=cs._initialState;

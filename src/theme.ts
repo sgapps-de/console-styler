@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import ConsoleStyler, { type ConsoleStylerOptions } from './console-styler';
+import { type ConsoleStylerBase, type ConsoleStylerOptions } from './console-styler';
 import  { type EnvironmentOptions, 
           envGetter, type EnvironmentGetter
         } from './command-info';
@@ -58,7 +58,7 @@ function nameArray(nx: string | string[] | undefined, d: string | string[]): str
         return nn.split(/[,\s]\s*/g).filter(n => !!n);
 }
 
-export function ConsoleStylerSetupTheme(cs: ConsoleStyler, cso: ConsoleStylerOptions): void {
+export function ConsoleStylerSetupTheme(cs: ConsoleStylerBase, cso: ConsoleStylerOptions): void {
 
     if (!cso.theme) return;
 
