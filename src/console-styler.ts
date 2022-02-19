@@ -421,8 +421,7 @@ export class ConsoleStylerBase {
 
     protected _settingsCacheName(ss: Settings)
 
-    {  const mmm = ss.mr*65535+(ss.mm^ss.ms)*256+ss.ms;
-       return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${mmm}`;
+    {  return `${(ss.fg ?? '?')}/${(ss.bg ?? '?')}/${ss.ms.toString(16)}:${(ss.ms^ss.mm).toString(16)}:${ss.mr.toString(16)}`;
     }
 
     protected _createStyle(ss: ConsoleStyleSettings): ConsoleStyle {
