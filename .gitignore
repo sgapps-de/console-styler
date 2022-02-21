@@ -1,8 +1,7 @@
 node_modules
-*.log
-.pack
 .vscode
-.idea
+pack
 lib
 dist
+*.log
 adhoc*
