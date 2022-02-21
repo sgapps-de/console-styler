@@ -3,9 +3,9 @@ import { inspect } from 'util';
 
 import  { type EnvironmentOptions, type CommandOptions, 
           envGetter, optsGetter, EnvironmentGetter, CommandOptionsGetter
-        } from './command-info';
+        } from './command-info.js';
 
-import { Modifier } from './state';        
+import { Modifier } from './state.js';        
 
 export interface TermInfoOptions {
 
@@ -91,7 +91,7 @@ export class TermInfo {
         if (ct) return ct;
 
         if (process.platform === 'win32') {
-            if (v=cd.env('CONEMUANSI'))
+            if (v=cd.env('ConEmuANSI'))
                 return (v==='ON') ? 'conemu-ansi' : 'conemu-dumb';
 
             return (cd.env('SESSIONNAME')==='Console') ? 'windows-console' : 'windows-terminal';
@@ -207,6 +207,9 @@ export class TermInfo {
         else if (tt==='terminator' || tt=='xterm')
             return 3;
 
+        else if (tt==='conemu-ansi')
+            return 1;
+
         else
             return this._levelForce(tt);
     }
@@ -226,6 +229,9 @@ export class TermInfo {
 
         else if (tt==='windows-console')
             return Modifier.WIN_CON;
+
+        else if (tt==='conemu-ansi')
+            return Modifier.CON_EMU;
 
         else if (tt.startsWith('terminator') || tt.startsWith('xterm'))
             return Modifier.XTERM;

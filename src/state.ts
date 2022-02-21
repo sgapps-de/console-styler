@@ -1,6 +1,6 @@
 // import type ConsoleStyler from './console-styler';
 import { type ConsoleStylerBase } from './console-styler';
-import * as Colors from './colors';
+import * as Colors from './colors.js';
 
 export enum Modifier {
     BOLD             = 0x0001,
@@ -21,6 +21,7 @@ export enum Modifier {
 
     WIN_TERM         = STANDARD,
     WIN_CON          = STANDARD,
+    CON_EMU          = UNDERLINE | INVERSE,
     XTERM            = STANDARD & (~(DOUBLE_UNDERLINE|OVERLINE)),
     DEFAULT          = BOLD | UNDERLINE | INVERSE,
 

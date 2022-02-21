@@ -1,17 +1,12 @@
 import * as util from 'util';
-
-import * as Colors from './colors';
-
-import  { type EnvironmentOptions, type CommandOptions } from './command-info';
-
+import * as Colors from './colors.js';
+import  { type EnvironmentOptions, type CommandOptions } from './command-info.js';
 import { Modifier, State, Settings, StateStringList,
          ANSI_SGR_REGEXP_GLOBAL, ANSI_NO_STATE, ANSI_NO_STATE_FINAL, ANSI_NO_SETTINGS,
          sgrPars2Settings, settingsOverwrite,
-        } from './state';
-
-import { TermInfo, type TermInfoOptions } from './terminfo';
-
-import { ConsoleStylerSetupTheme, type ConsoleStylerThemeOptions } from './theme';
+        } from './state.js';
+import { TermInfo, type TermInfoOptions } from './terminfo.js';
+import { ConsoleStylerSetupTheme, type ConsoleStylerThemeOptions } from './theme.js';
 
 export type ConsoleStyleFunction = (s: string | StateStringList, cs: ConsoleStylerBase) => string | StateStringList;
 export type ConsoleStyleStringFunction = (s: string) => string;
@@ -120,7 +115,7 @@ const STANDARD_STYLES : { [key: string]: StandardStyleDefinition } = {
     dblUl:      STANDARD_DBL_UNDERLINE,
     blink:      [ { ms: Modifier.BLINK, mm: Modifier.ANY_BLINK, mr: 0 }, Modifier.BLINK ],
     rapidBlink: [ { ms: Modifier.RAPID_BLINK, mm: Modifier.ANY_BLINK, mr: 0 }, Modifier.BLINK ],
-    strikeThrough: Modifier.STRIKE_THROUGH,
+    strikeThrough: [ Modifier.STRIKE_THROUGH ],
     strikethrough: Modifier.STRIKE_THROUGH,
     strike:     Modifier.STRIKE_THROUGH,
     inverse:    Modifier.INVERSE,
@@ -590,6 +585,7 @@ export class ConsoleStylerBase {
                 return { fg: sxx, ms: 0, mm: 0, mr: 0 };
         }
         else if (typeof sxx === 'number') { // modifier style
+            if (sxx<Modifier.STANDARD && (sxx&this.modifier)==0) return ANSI_NO_SETTINGS;
             return { ms: sxx, mm: sxx, mr: 0 };
         }
         else if ('f' in sxx) { // function
