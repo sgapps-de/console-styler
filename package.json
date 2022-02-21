@@ -1,33 +1,33 @@
 {
     "name": "console-styler",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A Styler for Console Output",
     "author": "sgapps.de <webmaster@sgapps.de>",
     "keywords": [
-		"ansi",
+        "ansi",
         "chalk",
-		"cli",
-    	"color",
-		"colors",
-		"colour",
-		"command-line",
-		"console",
-		"formatting",
-		"log",
-		"logging",
-		"rgb",
-		"shell",
-		"string",
-		"style",
-		"styles",
-		"terminal",
-		"theme",
-		"tty",
-		"xterm"
-	],
+        "cli",
+        "color",
+        "colors",
+        "colour",
+        "command-line",
+        "console",
+        "formatting",
+        "log",
+        "logging",
+        "rgb",
+        "shell",
+        "string",
+        "style",
+        "styles",
+        "terminal",
+        "theme",
+        "tty",
+        "xterm"
+    ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/sgapps-de/console-styler"
+        "url": "https://github.com/sgapps-de/console-styler.git"
     },
     "license": "MIT",
     "main": "dist/node/cjs/console-styler.js",
@@ -42,15 +42,15 @@
             "require": "./dist/node/cjs/chalk.js"
         }
     },
+    "engines": {
+        "node": "^12.17.0 || ^14.13 || >=16.0.0"
+    },
     "files": [
         "dist/**/package.json",
         "dist/**/*.js",
         "dist/types/**/*.d.ts",
         "!dist/**/test/*"
     ],
-    "engines": {
-        "node": ">=14.0.0"
-    },
     "scripts": {
         "build": "run-s build:node build:types",
         "build-tsc": "tsc",
@@ -77,7 +77,10 @@
         "bench:1": "tsc-check && node lib/bench/bench1.js",
         "bench:2": "tsc-check && node lib/bench/bench2.js",
         "bench:3": "tsc-check && node lib/bench/bench3.js",
-        "bench:4": "tsc-check && node lib/bench/bench4.js"
+        "bench:4": "tsc-check && node lib/bench/bench4.js",
+        "prepublish": "echo \"use npm run pub!\" && exit 1",
+        "pck": "npx pure-publish pack",
+        "pub": "npx pure-publish publish"
     },
     "devDependencies": {
         "@types/benchmark": "^2.1.1",
@@ -87,6 +90,7 @@
         "@typescript-eslint/parser": "^5.3.1",
         "benny": "^3.7.1",
         "chalk": "^4.1.2",
+        "clean-package": "^2.1.1",
         "cross-env": "^7.0.3",
         "ejs": "^3.1.6",
         "eslint": "^8.2.0",
@@ -97,6 +101,7 @@
         "jest": "27.3.1",
         "jest-config": "27.3.1",
         "npm-run-all": "^4.1.5",
+        "pure-publish": "^1.0.1",
         "rimraf": "^3.0.2",
         "run-script-os": "^1.1.6",
         "semantic-release": "^18.0.0",
@@ -104,5 +109,17 @@
         "ts-node": "^10.4.0",
         "typedoc": "^0.22.8",
         "typescript": "^4.4.4"
+    },
+    "pure-publish": {
+        "remove": [
+            "pure-publish",
+            "devDependencies",
+            "files"
+        ],
+        "replace": {
+            "scripts": {
+                "test": "echo \"No tests defined!\" && exit 1"
+            }
+        }
     }
 }
